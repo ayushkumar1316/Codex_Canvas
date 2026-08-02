@@ -61,17 +61,7 @@ The editor renders a live component tree that you can inspect, select, and refin
 
 ## Screenshots
 
-<div align="center">
-
-| Landing Page | Editor Workspace |
-|:---:|:---:|
-| ![Landing](https://placehold.co/1200x600/09090B/A78BFA?text=Landing+Page) | ![Editor](https://placehold.co/1200x600/09090B/A78BFA?text=Editor+Workspace) |
-
-| AI Command Bar | Component Inspector |
-|:---:|:---:|
-| ![AI Pill](https://placehold.co/1200x600/09090B/A78BFA?text=AI+Command+Bar) | ![Inspector](https://placehold.co/1200x600/09090B/A78BFA?text=Component+Inspector) |
-
-</div>
+Project screenshots will be added after the hackathon submission.
 
 ---
 
