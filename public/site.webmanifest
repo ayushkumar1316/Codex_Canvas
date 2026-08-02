@@ -1,0 +1,15 @@
+{
+  "name": "Codex Canvas",
+  "short_name": "Codex Canvas",
+  "description": "AI-powered visual website editor",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
+  "theme_color": "#09090B",
+  "background_color": "#09090B",
+  "display": "standalone"
+}
