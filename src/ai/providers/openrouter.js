@@ -1,7 +1,7 @@
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 export const openRouterProvider = {
-  async execute({ systemPrompt, context, userPrompt, schema }) {
+  async execute({ systemPrompt, context, userPrompt }) {
     const response = await fetch(OPENROUTER_API_URL, {
       method: "POST",
       headers: {

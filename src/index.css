@@ -55,6 +55,129 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-color: #09090b;
+    background-color: #0a0a0e;
   }
+}
+
+textarea::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+textarea::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+textarea::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+
+textarea::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+}
+
+@keyframes canvas-entry {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes tree-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes canvas-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.06);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(99, 102, 241, 0.1);
+  }
+}
+
+@keyframes success-ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-canvas-entry,
+  .animate-tree-slide,
+  .animate-canvas-glow,
+  .animate-success-ripple,
+  .animate-toast-in,
+  .animate-toast-out {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+[data-component-id]:not([data-component-type="root"]):hover {
+  outline: 1px dashed rgba(255, 255, 255, 0.15);
+  outline-offset: 2px;
+}
+
+[data-component-id]:not([data-component-type="root"]):focus-visible {
+  outline: 2px solid rgba(139, 92, 246, 0.5);
+  outline-offset: 2px;
+}
+
+[data-component-id][data-component-type="root"]:hover {
+  outline: 1px dashed rgba(255, 255, 255, 0.08);
+  outline-offset: 2px;
 }

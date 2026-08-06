@@ -15,7 +15,9 @@ export default function AutoResizeTextarea({
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "0px";
-    el.style.height = `${Math.min(el.scrollHeight, 144)}px`;
+    const scrollH = el.scrollHeight;
+    el.style.height = `${Math.min(scrollH, 180)}px`;
+    el.style.overflowY = scrollH > 180 ? "auto" : "hidden";
   }, []);
 
   useEffect(() => {
@@ -29,16 +31,48 @@ export default function AutoResizeTextarea({
     }
   };
 
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text/plain");
+    const cleaned = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    const el = textareaRef.current;
+    if (!el) return;
+
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const currentValue = el.value;
+    const newValue = currentValue.slice(0, start) + cleaned + currentValue.slice(end);
+
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLTextAreaElement.prototype,
+      "value"
+    ).set;
+    nativeInputValueSetter.call(el, newValue);
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const cursorPos = start + cleaned.length;
+    requestAnimationFrame(() => {
+      el.selectionStart = cursorPos;
+      el.selectionEnd = cursorPos;
+    });
+  };
+
   return (
     <textarea
       ref={textareaRef}
       value={value}
       onChange={onChange}
       onKeyDown={handleKeyDown}
+      onPaste={handlePaste}
       disabled={disabled}
       placeholder={placeholder}
       rows={1}
-      className={`max-h-36 min-h-[34px] flex-1 resize-none border-0 bg-transparent py-1.5 text-sm leading-5 text-zinc-100 outline-none placeholder:text-zinc-500 disabled:opacity-50 ${className ?? ""}`}
+      className={`w-full min-h-[36px] max-h-[180px] resize-none border-0 bg-transparent px-0 pt-[9px] pb-[5px] text-[15px] leading-[1.6] text-zinc-100 outline-none placeholder:text-transparent disabled:opacity-50 ${className ?? ""}`}
+      style={{
+        scrollbarWidth: "thin",
+        scrollbarColor: "rgba(255,255,255,0.1) transparent",
+        overflowY: "hidden",
+      }}
       {...props}
     />
   );

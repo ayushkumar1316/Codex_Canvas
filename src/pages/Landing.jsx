@@ -1,10 +1,12 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   ChevronRight,
   Cloud,
   Clock3,
+  Copy,
+  FolderOpen,
   Globe,
   Image,
   ImagePlus,
@@ -12,15 +14,20 @@ import {
   LayoutDashboard,
   Mic,
   MicOff,
+  MoreVertical,
   Paintbrush,
+  Search,
   SquarePen,
   Sparkles,
+  Trash2,
   Wand2,
   X,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import useSpeechRecognition from "@/hooks/useSpeechRecognition";
 import useImageAttachment from "@/hooks/useImageAttachment";
+import { useAppStore } from "@/store/useAppStore";
+import DeleteConfirmationDialog from "@/components/ui/DeleteConfirmationDialog";
 
 const features = [
   {
@@ -51,10 +58,70 @@ const templates = [
   { label: "From Screenshot", prompt: "Improve this website using the attached screenshot — modernize the layout and refine spacing", icon: Sparkles, color: "text-fuchsia-400" },
 ];
 
+function formatRelativeTime(dateString) {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffMs = now - date;
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHr = Math.floor(diffMs / 3600000);
+  const diffDay = Math.floor(diffMs / 86400000);
+
+  if (diffMin < 1) return "Just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHr < 24) return `${diffHr}h ago`;
+  if (diffDay < 7) return `${diffDay}d ago`;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function countComponents(node) {
+  if (!node) return 0;
+  let count = 1;
+  for (const child of node.children ?? []) {
+    count += countComponents(child);
+  }
+  return count;
+}
+
 export default function Landing() {
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState("");
   const [isFocused, setIsFocused] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("updatedAt");
+  const [canvasToDelete, setCanvasToDelete] = useState(null);
+  const [editingCanvasId, setEditingCanvasId] = useState(null);
+  const [editingName, setEditingName] = useState("");
+  const [contextMenuCanvasId, setContextMenuCanvasId] = useState(null);
+
+  const canvases = useAppStore((state) => state.canvases);
+  const setActiveCanvas = useAppStore((state) => state.setActiveCanvas);
+  const renameCanvas = useAppStore((state) => state.renameCanvas);
+  const duplicateCanvas = useAppStore((state) => state.duplicateCanvas);
+  const deleteCanvas = useAppStore((state) => state.deleteCanvas);
+
+  const recentCanvases = useMemo(() => {
+    let filtered = canvases;
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((c) =>
+        c.name.toLowerCase().includes(query)
+      );
+    }
+
+    return [...filtered].sort((a, b) => {
+      if (sortBy === "updatedAt") {
+        return new Date(b.updatedAt) - new Date(a.updatedAt);
+      }
+      if (sortBy === "createdAt") {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      }
+      if (sortBy === "name") {
+        return a.name.localeCompare(b.name);
+      }
+      return 0;
+    });
+  }, [canvases, searchQuery, sortBy]);
 
   const handleVoiceResult = useCallback(
     (transcript) => {
@@ -95,18 +162,54 @@ export default function Landing() {
 
   const handleCreate = () => {
     if (!prompt.trim() && !hasImage) return;
+    const promptToSend = prompt.trim() || null;
+    const imageToSend = hasImage
+      ? { name: image.name, type: image.type, size: image.size, preview: image.preview }
+      : null;
+    setPrompt("");
+    removeImage();
     navigate("/editor", {
       state: {
-        initialPrompt: prompt.trim() || null,
-        initialImage: hasImage
-          ? { name: image.name, type: image.type, size: image.size, preview: image.preview }
-          : null,
+        initialPrompt: promptToSend,
+        initialImage: imageToSend,
       },
     });
   };
 
   const handleOpenEditor = () => {
     navigate("/editor");
+  };
+
+  const handleOpenCanvas = (canvasId) => {
+    setActiveCanvas(canvasId);
+    navigate("/editor");
+  };
+
+  const handleRenameCanvas = (canvasId) => {
+    if (editingName.trim()) {
+      renameCanvas(canvasId, editingName.trim());
+    }
+    setEditingCanvasId(null);
+    setEditingName("");
+  };
+
+  const handleDuplicateCanvas = (canvasId) => {
+    const newId = duplicateCanvas(canvasId);
+    if (newId) {
+      setActiveCanvas(newId);
+      navigate("/editor");
+    }
+  };
+
+  const handleDeleteCanvas = (canvasId) => {
+    deleteCanvas(canvasId);
+    setCanvasToDelete(null);
+  };
+
+  const handleStartRename = (canvas) => {
+    setEditingCanvasId(canvas.id);
+    setEditingName(canvas.name);
+    setContextMenuCanvasId(null);
   };
 
   const handleMicClick = () => {
@@ -148,17 +251,19 @@ export default function Landing() {
             Codex Canvas
           </span>
         </a>
-        <button
-          type="button"
-          onClick={handleOpenEditor}
-          className="group inline-flex items-center gap-2 rounded-full border border-purple-400/20 bg-purple-500/10 py-1.5 pl-2.5 pr-3.5 text-xs font-medium text-purple-200 shadow-lg shadow-purple-950/20 backdrop-blur-xl transition-all duration-300 hover:border-purple-400/30 hover:bg-purple-500/15 hover:shadow-purple-500/20"
-        >
-          <span className="flex size-5 items-center justify-center rounded-full bg-purple-500/25">
-            <Sparkles className="size-3" />
-          </span>
-          The new creative workspace
-          <ChevronRight className="size-3.5 text-purple-300/60 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:text-purple-200" />
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleOpenEditor}
+            className="group inline-flex items-center gap-2 rounded-full border border-purple-400/20 bg-purple-500/10 py-1.5 pl-2.5 pr-3.5 text-xs font-medium text-purple-200 shadow-lg shadow-purple-950/20 backdrop-blur-xl transition-all duration-300 hover:border-purple-400/30 hover:bg-purple-500/15 hover:shadow-purple-500/20"
+          >
+            <span className="flex size-5 items-center justify-center rounded-full bg-purple-500/25">
+              <Sparkles className="size-3" />
+            </span>
+            The new creative workspace
+            <ChevronRight className="size-3.5 text-purple-300/60 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:text-purple-200" />
+          </button>
+        </div>
       </nav>
 
       <section className="relative z-10 mx-auto flex min-h-[calc(100vh-5rem)] max-w-5xl flex-col items-center justify-center px-5 py-20 text-center sm:px-8">
@@ -235,6 +340,12 @@ export default function Landing() {
                   aria-label="Describe what you want to create"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleCreate();
+                    }
+                  }}
                   onFocus={() => setIsFocused(true)}
                   onBlur={() => setIsFocused(false)}
                   placeholder={isListening ? "" : "Design a modern SaaS landing page..."}
@@ -257,7 +368,7 @@ export default function Landing() {
               </button>
             </div>
 
-            <div className="mt-3 flex items-center gap-1.5 border-t border-white/[0.06] pt-3">
+            <div className="mt-3 flex items-center gap-1.5 border-t border-white/[0.05] pt-3">
               <button
                 type="button"
                 onClick={openFilePicker}
@@ -362,48 +473,195 @@ export default function Landing() {
             </h2>
           </div>
 
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/[0.1] bg-white/[0.02] py-20 text-center">
-            <div className="mb-6 w-40">
-              <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
-                <div className="flex gap-1.5">
-                  <span className="size-1.5 rounded-full bg-white/[0.12]" />
-                  <span className="size-1.5 rounded-full bg-white/[0.08]" />
-                  <span className="size-1.5 rounded-full bg-white/[0.06]" />
-                </div>
-                <div className="mt-3 grid grid-cols-[0.6fr_1.4fr] gap-2">
-                  <div className="space-y-2">
-                    <div className="h-8 rounded-md bg-white/[0.06]" />
-                    <div className="h-5 rounded-md bg-white/[0.04]" />
-                    <div className="h-5 rounded-md bg-white/[0.04]" />
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
+              <Input
+                type="text"
+                placeholder="Search canvases..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-9 border-white/[0.08] bg-white/[0.03] pl-9 text-sm text-zinc-200 placeholder:text-zinc-500 focus-visible:border-violet-400/40 focus-visible:ring-1 focus-visible:ring-violet-400/20"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-zinc-500">Sort by:</span>
+              <div className="flex rounded-lg border border-white/[0.08] bg-white/[0.03] p-0.5">
+                {[
+                  { value: "updatedAt", label: "Recent" },
+                  { value: "name", label: "Name" },
+                  { value: "createdAt", label: "Created" },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setSortBy(option.value)}
+                    className={`rounded-md px-3 py-1 text-xs font-medium transition-all duration-150 ${
+                      sortBy === option.value
+                        ? "bg-white/[0.08] text-zinc-100"
+                        : "text-zinc-500 hover:text-zinc-300"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {recentCanvases.length > 0 ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {recentCanvases.map((canvas) => (
+                <div
+                  key={canvas.id}
+                  className="group relative rounded-xl border border-white/[0.08] bg-white/[0.03] p-4 transition-all duration-200 hover:border-white/[0.16] hover:bg-white/[0.06]"
+                >
+                  <div className="mb-3 flex items-start justify-between">
+                    <div className="min-w-0 flex-1">
+                      {editingCanvasId === canvas.id ? (
+                        <input
+                          type="text"
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          onBlur={() => handleRenameCanvas(canvas.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              handleRenameCanvas(canvas.id);
+                            } else if (e.key === "Escape") {
+                              setEditingCanvasId(null);
+                              setEditingName("");
+                            }
+                          }}
+                          className="w-full border-0 bg-transparent text-sm font-medium text-zinc-100 outline-none focus:ring-0"
+                          autoFocus
+                        />
+                      ) : (
+                        <p className="truncate text-sm font-medium text-zinc-100">
+                          {canvas.name}
+                        </p>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setContextMenuCanvasId(
+                            contextMenuCanvasId === canvas.id ? null : canvas.id
+                          )
+                        }
+                        className="rounded-lg p-1 text-zinc-500 opacity-0 transition-all duration-150 hover:bg-white/[0.08] hover:text-zinc-300 group-hover:opacity-100"
+                        aria-label="Canvas actions"
+                      >
+                        <MoreVertical className="size-4" />
+                      </button>
+                      {contextMenuCanvasId === canvas.id && (
+                        <div className="absolute right-0 top-full z-10 mt-1 w-40 rounded-xl border border-white/[0.08] bg-[#12121a] p-1 shadow-xl">
+                          <button
+                            type="button"
+                            onClick={() => handleStartRename(canvas)}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 transition-colors hover:bg-white/[0.06]"
+                          >
+                            <SquarePen className="size-3.5" />
+                            Rename
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleDuplicateCanvas(canvas.id);
+                              setContextMenuCanvasId(null);
+                            }}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 transition-colors hover:bg-white/[0.06]"
+                          >
+                            <Copy className="size-3.5" />
+                            Duplicate
+                          </button>
+                          {canvases.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCanvasToDelete(canvas);
+                                setContextMenuCanvasId(null);
+                              }}
+                              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-red-400 transition-colors hover:bg-red-500/10"
+                            >
+                              <Trash2 className="size-3.5" />
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="h-3 w-3/4 rounded bg-white/[0.08]" />
-                    <div className="h-2 w-full rounded bg-white/[0.05]" />
-                    <div className="h-2 w-2/3 rounded bg-white/[0.05]" />
-                    <div className="mt-3 grid grid-cols-2 gap-1.5">
-                      <div className="h-6 rounded bg-white/[0.04]" />
-                      <div className="h-6 rounded bg-white/[0.04]" />
+
+                  <div className="mb-4 flex items-center gap-4 text-xs text-zinc-500">
+                    <span className="flex items-center gap-1.5">
+                      <Clock3 className="size-3" />
+                      {formatRelativeTime(canvas.updatedAt)}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <Layers3 className="size-3" />
+                      {canvas.componentTree
+                        ? countComponents(canvas.componentTree)
+                        : 0}{" "}
+                      components
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenCanvas(canvas.id)}
+                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-xs font-medium text-zinc-300 transition-all duration-200 hover:border-purple-500/40 hover:bg-purple-500/10 hover:text-purple-200"
+                    >
+                      <FolderOpen className="size-3" />
+                      Open
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/[0.1] bg-white/[0.02] py-20 text-center">
+              <div className="mb-6 w-40">
+                <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
+                  <div className="flex gap-1.5">
+                    <span className="size-1.5 rounded-full bg-white/[0.12]" />
+                    <span className="size-1.5 rounded-full bg-white/[0.08]" />
+                    <span className="size-1.5 rounded-full bg-white/[0.06]" />
+                  </div>
+                  <div className="mt-3 grid grid-cols-[0.6fr_1.4fr] gap-2">
+                    <div className="space-y-2">
+                      <div className="h-8 rounded-md bg-white/[0.06]" />
+                      <div className="h-5 rounded-md bg-white/[0.04]" />
+                      <div className="h-5 rounded-md bg-white/[0.04]" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-3 w-3/4 rounded bg-white/[0.08]" />
+                      <div className="h-2 w-full rounded bg-white/[0.05]" />
+                      <div className="h-2 w-2/3 rounded bg-white/[0.05]" />
+                      <div className="mt-3 grid grid-cols-2 gap-1.5">
+                        <div className="h-6 rounded bg-white/[0.04]" />
+                        <div className="h-6 rounded bg-white/[0.04]" />
+                      </div>
                     </div>
                   </div>
                 </div>
+                <div className="mt-2 flex justify-center">
+                  <span className="rounded-md border border-dashed border-white/[0.08] px-2 py-0.5 text-[8px] text-white/[0.15]">
+                    empty canvas
+                  </span>
+                </div>
               </div>
-              <div className="mt-2 flex justify-center">
-                <span className="rounded-md border border-dashed border-white/[0.08] px-2 py-0.5 text-[8px] text-white/[0.15]">
-                  empty canvas
-                </span>
-              </div>
+              <p className="text-sm font-medium text-zinc-300">
+                {searchQuery ? "No canvases found" : "No canvases yet"}
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">
+                {searchQuery
+                  ? "Try a different search term"
+                  : "Your AI-generated projects will appear here."}
+              </p>
             </div>
-            <p className="text-sm font-medium text-zinc-300">No canvases yet</p>
-            <p className="mt-1 text-xs text-zinc-500">Your AI-generated projects will appear here.</p>
-            <button
-              type="button"
-              onClick={handleOpenEditor}
-              className="mt-5 inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-purple-500/10 px-5 py-2.5 text-sm font-medium text-purple-300 transition-all duration-200 hover:border-purple-500/50 hover:bg-purple-500/20 hover:text-white"
-            >
-              <SquarePen className="size-4" />
-              Create your first canvas
-            </button>
-          </div>
+          )}
         </div>
       </section>
 
@@ -422,6 +680,16 @@ export default function Landing() {
           Built for ideas in motion
         </div>
       </footer>
+
+      <DeleteConfirmationDialog
+        isOpen={!!canvasToDelete}
+        onClose={() => setCanvasToDelete(null)}
+        onConfirm={() => handleDeleteCanvas(canvasToDelete?.id)}
+        title="Delete Canvas"
+        description={`Are you sure you want to delete "${canvasToDelete?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </main>
   );
 }

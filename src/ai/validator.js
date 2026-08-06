@@ -406,6 +406,17 @@ export function validatePatch(patch, componentTree) {
   return errors;
 }
 
+function normalizeNode(node) {
+  if (!node || typeof node !== "object") return node;
+  return {
+    id: String(node.id || `node-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`),
+    type: node.type,
+    props: isObject(node.props) ? node.props : {},
+    styles: isObject(node.styles) ? node.styles : {},
+    children: Array.isArray(node.children) ? node.children.map(normalizeNode) : [],
+  };
+}
+
 function normalizeOperation(op) {
   const normalized = { ...op };
 
@@ -414,17 +425,55 @@ function normalizeOperation(op) {
     delete normalized.op;
   }
 
-  if (normalized.type === "removeNode") {
-    normalized.type = "deleteNode";
+  const typeMap = {
+    removeNode: "deleteNode",
+    addNode: "insertNode",
+    addChild: "insertNode",
+    add: "insertNode",
+    create: "insertNode",
+    update: "updateProps",
+    modify: "updateStyles",
+    replace: "replaceNode",
+    delete: "deleteNode",
+    remove: "deleteNode",
+  };
+
+  if (typeMap[normalized.type]) {
+    normalized.type = typeMap[normalized.type];
   }
 
-  if (!normalized.targetId) {
-    if (normalized.id && normalized.type !== "insertNode") {
-      normalized.targetId = normalized.id;
-      delete normalized.id;
-    } else if (normalized.target) {
-      normalized.targetId = normalized.target;
+  if (normalized.type === "insertNode") {
+    if (normalized.component && !normalized.node) {
+      normalized.node = normalized.component;
+      delete normalized.component;
+    }
+
+    if (normalized.target && !normalized.parentId) {
+      normalized.parentId = normalized.target;
       delete normalized.target;
+    }
+    if (normalized.targetId && !normalized.parentId) {
+      normalized.parentId = normalized.targetId;
+      delete normalized.targetId;
+    }
+    if (!normalized.position) {
+      normalized.position = "end";
+    }
+    if (normalized.position === "inside") {
+      normalized.position = "end";
+    }
+    if (normalized.node) {
+      normalized.node = normalizeNode(normalized.node);
+    }
+  } else {
+    if (!normalized.targetId) {
+      if (normalized.id && normalized.type !== "insertNode") {
+        normalized.targetId = normalized.id;
+        delete normalized.id;
+      } else if (normalized.target) {
+        normalized.targetId = normalized.target;
+        delete normalized.target;
+      }
     }
   }
 
@@ -433,6 +482,24 @@ function normalizeOperation(op) {
     if (!normalized.position) {
       normalized.position = "end";
     }
+  }
+
+  const allowedOps = {
+    insertNode: ["type", "parentId", "position", "node"],
+    updateProps: ["type", "targetId", "props"],
+    updateStyles: ["type", "targetId", "styles"],
+    deleteNode: ["type", "targetId"],
+    replaceNode: ["type", "targetId", "node"],
+  };
+
+  if (allowedOps[normalized.type]) {
+    const clean = {};
+    for (const key of allowedOps[normalized.type]) {
+      if (normalized[key] !== undefined) {
+        clean[key] = normalized[key];
+      }
+    }
+    return clean;
   }
 
   return normalized;

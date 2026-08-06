@@ -35,7 +35,7 @@ export default function RotatingPlaceholder({ isPaused, className }) {
 
   return (
     <span
-      className={`transition-opacity duration-200 ${isFading ? "opacity-0" : "opacity-100"} ${className ?? ""}`}
+      className={`transition-opacity duration-300 ${isFading ? "opacity-0" : "opacity-100"} ${className ?? ""}`}
     >
       {suggestions[index]}
     </span>
