@@ -2,7 +2,7 @@
 
 # Codex Canvas
 
-### AI-Powered Visual Website Editor
+### AI-Powered Visual Website Builder & Editor
 
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat&logo=react&logoColor=white)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat&logo=vite&logoColor=white)](https://vitejs.dev)
