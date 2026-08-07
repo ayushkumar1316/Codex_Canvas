@@ -2,6 +2,24 @@ const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 export const openRouterProvider = {
   async execute({ systemPrompt, context, userPrompt }) {
+    const content = [
+      {
+        type: "text",
+        text: JSON.stringify({
+          context,
+          userPrompt,
+        }),
+      },
+    ];
+
+    const refImage = context?.referenceImage;
+    if (refImage?.preview) {
+      content.push({
+        type: "image_url",
+        image_url: { url: refImage.preview },
+      });
+    }
+
     const response = await fetch(OPENROUTER_API_URL, {
       method: "POST",
       headers: {
@@ -19,10 +37,7 @@ export const openRouterProvider = {
           },
           {
             role: "user",
-            content: JSON.stringify({
-              context,
-              userPrompt,
-            }),
+            content,
           },
         ],
         response_format: { type: "json_object" },
@@ -37,12 +52,12 @@ export const openRouterProvider = {
       throw new Error(errorMessage);
     }
 
-    const content = result?.choices?.[0]?.message?.content;
-    if (!content) {
+    const responseBody = result?.choices?.[0]?.message?.content;
+    if (!responseBody) {
       throw new Error("No content in API response");
     }
 
-    return JSON.parse(content);
+    return JSON.parse(responseBody);
   },
 };
 

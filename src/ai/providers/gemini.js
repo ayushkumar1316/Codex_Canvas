@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const MODEL_NAME = "gemini-3.5-flash-lite";
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 2000;
 
 function stripMarkdownFences(text) {
@@ -33,12 +33,28 @@ export const geminiProvider = {
       systemInstruction: systemPrompt,
     });
 
-    const userContent = JSON.stringify({ context, userPrompt });
+    const contextPayload = { context, userPrompt };
+    const userContent = [];
+
+    userContent.push({ text: JSON.stringify(contextPayload) });
+
+    const refImage = context?.referenceImage;
+    if (refImage?.preview) {
+      const dataUrl = refImage.preview;
+      const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
+      userContent.push({
+        inlineData: {
+          mimeType: refImage.type || "image/png",
+          data: base64,
+        },
+      });
+    }
 
     let lastError;
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const result = await model.generateContent(userContent);
+        const requestPayload = userContent.length === 1 ? userContent[0] : userContent;
+        const result = await model.generateContent(requestPayload);
         const response = result.response;
         const text = response.text();
 
@@ -61,7 +77,9 @@ export const geminiProvider = {
       } catch (error) {
         lastError = error;
         const isRetryable =
+          error.message?.includes("429") ||
           error.message?.includes("503") ||
+          error.message?.includes("RESOURCE_EXHAUSTED") ||
           error.message?.includes("UNAVAILABLE") ||
           error.message?.includes("high demand") ||
           error.message?.includes("retry");

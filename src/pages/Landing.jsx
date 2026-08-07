@@ -28,6 +28,7 @@ import useSpeechRecognition from "@/hooks/useSpeechRecognition";
 import useImageAttachment from "@/hooks/useImageAttachment";
 import { useAppStore } from "@/store/useAppStore";
 import DeleteConfirmationDialog from "@/components/ui/DeleteConfirmationDialog";
+import ProviderSelector from "@/components/ai/ProviderSelector";
 
 const features = [
   {
@@ -95,6 +96,7 @@ export default function Landing() {
 
   const canvases = useAppStore((state) => state.canvases);
   const setActiveCanvas = useAppStore((state) => state.setActiveCanvas);
+  const createCanvas = useAppStore((state) => state.createCanvas);
   const renameCanvas = useAppStore((state) => state.renameCanvas);
   const duplicateCanvas = useAppStore((state) => state.duplicateCanvas);
   const deleteCanvas = useAppStore((state) => state.deleteCanvas);
@@ -168,6 +170,7 @@ export default function Landing() {
       : null;
     setPrompt("");
     removeImage();
+    createCanvas();
     navigate("/editor", {
       state: {
         initialPrompt: promptToSend,
@@ -177,6 +180,7 @@ export default function Landing() {
   };
 
   const handleOpenEditor = () => {
+    createCanvas();
     navigate("/editor");
   };
 
@@ -352,6 +356,8 @@ export default function Landing() {
                   className="h-auto border-0 bg-transparent p-0 text-[15px] text-white shadow-none outline-none placeholder:text-zinc-500 transition-colors duration-300 focus:border-0 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:border-0 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
                 />
               </div>
+
+              <ProviderSelector variant="landing" />
 
               <button
                 type="button"
@@ -576,17 +582,21 @@ export default function Landing() {
                             Duplicate
                           </button>
                           {canvases.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setCanvasToDelete(canvas);
-                                setContextMenuCanvasId(null);
-                              }}
-                              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-red-400 transition-colors hover:bg-red-500/10"
-                            >
-                              <Trash2 className="size-3.5" />
-                              Delete
-                            </button>
+                            <>
+                              <div className="my-1 h-px bg-white/[0.05]" />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCanvasToDelete(canvas);
+                                  setContextMenuCanvasId(null);
+                                }}
+                                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-red-400 transition-colors hover:bg-red-500/10"
+                                aria-label="Delete canvas"
+                              >
+                                <Trash2 className="size-3.5" />
+                                Delete
+                              </button>
+                            </>
                           )}
                         </div>
                       )}

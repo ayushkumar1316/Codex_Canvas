@@ -67,6 +67,7 @@ export function buildContext({
   editorMode,
   registry,
   userPrompt,
+  referenceImage,
 }) {
   const registryMetadata = getRegistryMetadata(registry);
 
@@ -81,6 +82,7 @@ export function buildContext({
       registry: registryMetadata,
       editorMode,
       userPrompt,
+      referenceImage: referenceImage ?? null,
     };
   }
 
@@ -101,5 +103,6 @@ export function buildContext({
     registry: registryMetadata,
     editorMode,
     userPrompt,
+    referenceImage: referenceImage ?? null,
   };
 }

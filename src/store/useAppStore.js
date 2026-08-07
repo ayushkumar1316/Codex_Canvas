@@ -199,6 +199,9 @@ export const useAppStore = create(
       aiError: null,
       aiPrompt: "",
       aiPhase: "idle",
+      aiProvider: "auto",
+      aiModel: null,
+      aiActiveProvider: null,
 
       canUndo: false,
       canRedo: false,
@@ -527,6 +530,27 @@ export const useAppStore = create(
         });
       },
 
+      setAIProvider: (provider) => {
+        set((state) => {
+          state.aiProvider = provider;
+          if (provider !== "auto") {
+            state.aiModel = null;
+          }
+        });
+      },
+
+      setAIModel: (model) => {
+        set((state) => {
+          state.aiModel = model;
+        });
+      },
+
+      setAIActiveProvider: (provider) => {
+        set((state) => {
+          state.aiActiveProvider = provider;
+        });
+      },
+
       submitAICommand: async (command) => {
         if (get().aiLoading) return;
 
@@ -610,6 +634,8 @@ export const useAppStore = create(
         activeCanvasId: state.activeCanvasId,
         selectedComponentId: state.selectedComponentId,
         editorMode: state.editorMode,
+        aiProvider: state.aiProvider,
+        aiModel: state.aiModel,
       }),
     }
   )

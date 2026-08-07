@@ -2,7 +2,6 @@ import {
   Cloud,
   Globe,
   LayoutDashboard,
-  LayoutGrid,
   Paintbrush,
   Sparkles,
 } from "lucide-react";
@@ -20,10 +19,6 @@ export default function EmptyState() {
 
   const handleTemplateClick = (templatePrompt) => {
     setAIPrompt(templatePrompt);
-  };
-
-  const handleStartEmpty = () => {
-    useAppStore.getState().addComponent("container");
   };
 
   return (
@@ -71,18 +66,6 @@ export default function EmptyState() {
           })}
         </div>
       </div>
-
-      <div className="relative my-6 h-px w-full max-w-lg bg-white/[0.06]" />
-
-      <button
-        type="button"
-        onClick={handleStartEmpty}
-        className="group relative inline-flex items-center gap-1.5 text-[13px] text-zinc-500 transition-colors duration-200 hover:text-zinc-300"
-      >
-        <LayoutGrid className="size-3.5" />
-        Start from Empty Canvas
-        <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
-      </button>
     </section>
   );
 }

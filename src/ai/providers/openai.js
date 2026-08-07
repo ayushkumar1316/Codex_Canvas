@@ -2,6 +2,24 @@ const OPENAI_API_URL = "https://api.openai.com/v1/responses";
 
 export const openAIProvider = {
   async execute({ systemPrompt, context, userPrompt, schema }) {
+    const content = [
+      {
+        type: "input_text",
+        text: JSON.stringify({
+          context,
+          userPrompt,
+        }),
+      },
+    ];
+
+    const refImage = context?.referenceImage;
+    if (refImage?.preview) {
+      content.push({
+        type: "input_image",
+        image_url: refImage.preview,
+      });
+    }
+
     const response = await fetch(OPENAI_API_URL, {
       method: "POST",
       headers: {
@@ -14,15 +32,7 @@ export const openAIProvider = {
         input: [
           {
             role: "user",
-            content: [
-              {
-                type: "input_text",
-                text: JSON.stringify({
-                  context,
-                  userPrompt,
-                }),
-              },
-            ],
+            content,
           },
         ],
         text: {

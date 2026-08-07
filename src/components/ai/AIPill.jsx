@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useState } from "react";
 import {
   ArrowUp,
   ChevronDown,
@@ -11,13 +11,13 @@ import {
 import { useAppStore } from "@/store/useAppStore";
 import { componentRegistry } from "@/registry/componentRegistry";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { isLightColor } from "@/utils/colorUtils";
 import useSpeechRecognition from "@/hooks/useSpeechRecognition";
 import useImageAttachment from "@/hooks/useImageAttachment";
 import AutoResizeTextarea from "./AutoResizeTextarea";
 import RotatingPlaceholder from "./RotatingPlaceholder";
 import AIStatus from "./AIStatus";
 import ImageAttachment from "./ImageAttachment";
+import ProviderSelector from "./ProviderSelector";
 
 export default function AIPill() {
   const editorMode = useAppStore((state) => state.editorMode);
@@ -37,11 +37,6 @@ export default function AIPill() {
   const reduced = useReducedMotion();
 
   const isPreview = editorMode === "preview";
-
-  const isPageLight = useMemo(() => {
-    const rootBg = componentTree?.styles?.backgroundColor;
-    return isLightColor(rootBg);
-  }, [componentTree?.styles?.backgroundColor]);
 
   const handleVoiceResult = useCallback(
     (transcript) => {
@@ -93,7 +88,7 @@ export default function AIPill() {
       timestamp: new Date().toISOString(),
       editorMode,
       referenceImage: image
-        ? { name: image.name, type: image.type, size: image.size }
+        ? { name: image.name, type: image.type, size: image.size, preview: image.preview }
         : null,
     });
   };
@@ -121,39 +116,31 @@ export default function AIPill() {
       <button
         type="button"
         onClick={() => setExpanded(true)}
-        className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full border px-4 py-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.3)] backdrop-blur-xl transition-all duration-200 hover:shadow-[0_8px_40px_rgba(0,0,0,0.4)] hover:scale-105 active:scale-95 ${
-          isPageLight
-            ? "border-black/[0.08] bg-black/[0.05] hover:bg-black/[0.08]"
-            : "border-white/[0.1] bg-white/[0.06] hover:bg-white/[0.1]"
-        }`}
+        className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full border px-4 py-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.3)] backdrop-blur-xl transition-all duration-200 hover:shadow-[0_8px_40px_rgba(0,0,0,0.4)] hover:scale-105 active:scale-95 border-white/[0.1] bg-white/[0.06] hover:bg-white/[0.1]`}
       >
-        <span className={`flex items-center gap-2 text-[13px] font-medium ${
-          isPageLight ? "text-zinc-700" : "text-zinc-300"
-        }`}>
+        <span className="flex items-center gap-2 text-[13px] font-medium text-zinc-300">
           <Sparkles className="size-3.5 text-purple-500" />
           Ask AI
-          <ChevronDown className={`size-3.5 ${isPageLight ? "text-zinc-400" : "text-zinc-500"}`} />
+          <ChevronDown className="size-3.5 text-zinc-500" />
         </span>
       </button>
     );
   }
 
-  const idleBorder = isPageLight ? "border-black/[0.08]" : "border-white/[0.1]";
-  const idleBg = isPageLight ? "bg-black/[0.04]" : "bg-white/[0.06]";
-  const focusBorder = isPageLight ? "focus-within:border-purple-500/40 focus-within:bg-black/[0.06]" : "focus-within:border-purple-500/40 focus-within:bg-white/[0.08]";
-  const innerGradient = isPageLight
-    ? "bg-gradient-to-b from-black/[0.02] to-transparent"
-    : "bg-gradient-to-b from-white/[0.03] to-transparent";
-  const textColor = isPageLight ? "text-zinc-800" : "text-zinc-100";
-  const placeholderColor = isPageLight ? "text-zinc-400" : "text-zinc-600";
-  const badgeBorder = isPageLight ? "border-purple-500/15" : "border-purple-400/15";
-  const badgeBg = isPageLight ? "bg-purple-500/[0.06]" : "bg-purple-500/[0.08]";
-  const badgeText = isPageLight ? "text-purple-700" : "text-purple-200";
-  const iconMuted = isPageLight ? "text-zinc-400" : "text-zinc-500";
-  const iconHover = isPageLight ? "hover:bg-black/[0.06] hover:text-zinc-700" : "hover:bg-white/[0.07] hover:text-zinc-200";
-  const statusText = isPageLight ? "text-zinc-500" : "text-zinc-600";
-  const dismissHover = isPageLight ? "hover:text-zinc-600" : "hover:text-zinc-300";
-  const inactiveBtn = isPageLight ? "bg-black/[0.05] text-zinc-400" : "bg-white/[0.06] text-zinc-500";
+  const idleBorder = "border-white/[0.1]";
+  const idleBg = "bg-white/[0.06]";
+  const focusBorder = "focus-within:border-purple-500/40 focus-within:bg-white/[0.08]";
+  const innerGradient = "bg-gradient-to-b from-white/[0.03] to-transparent";
+  const textColor = "text-zinc-100";
+  const placeholderColor = "text-zinc-600";
+  const badgeBorder = "border-purple-400/15";
+  const badgeBg = "bg-purple-500/[0.08]";
+  const badgeText = "text-purple-200";
+  const iconMuted = "text-zinc-500";
+  const iconHover = "hover:bg-white/[0.07] hover:text-zinc-200";
+  const statusText = "text-zinc-600";
+  const dismissHover = "hover:text-zinc-300";
+  const inactiveBtn = "bg-white/[0.06] text-zinc-500";
 
   return (
     <div
@@ -191,8 +178,8 @@ export default function AIPill() {
           </div>
         )}
 
-        <div className={`flex items-start gap-2 rounded-[17px] px-3 py-2.5 ${innerGradient}`}>
-          <div className={`flex shrink-0 items-center gap-1.5 self-start rounded-full border ${badgeBorder} ${badgeBg} px-2.5 py-1.5 text-xs font-medium ${badgeText} transition-colors duration-200`}>
+        <div className={`flex items-center gap-2 rounded-[17px] px-3 py-2.5 ${innerGradient}`}>
+          <div className={`flex shrink-0 items-center gap-1.5 rounded-full border ${badgeBorder} ${badgeBg} px-2.5 py-1.5 text-xs font-medium ${badgeText} transition-colors duration-200`}>
             <Sparkles className="size-3.5" />
             <span className="hidden sm:inline">
               {selectedComponentId ? "Selected" : "Entire Page"}
@@ -222,7 +209,9 @@ export default function AIPill() {
             />
           </div>
 
-          <div className="flex shrink-0 items-start gap-0.5 pt-1">
+          <div className="flex shrink-0 items-center gap-2">
+            <ProviderSelector variant="editor" />
+
             {isPreview && (
               <button
                 type="button"
@@ -316,7 +305,7 @@ export default function AIPill() {
               <span>{imageError}</span>
             </div>
           ) : (
-            <AIStatus phase={aiPhase} />
+            <AIStatus phase={aiPhase} error={aiError} />
           )}
 
           {(isError || voiceError || imageError) && (
