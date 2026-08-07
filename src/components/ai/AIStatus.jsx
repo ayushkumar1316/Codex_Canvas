@@ -1,5 +1,7 @@
-import { Check, AlertCircle, Zap, Globe, Cpu, Sparkles } from "lucide-react";
+import { Check, AlertCircle, Sparkles, Activity, Zap, Bolt, Globe, Cpu } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
+import { getProviderTheme } from "@/ai/providerRegistry";
+import { getFriendlyErrorMessage } from "@/ai/providerManager";
 import ThinkingIndicator from "./ThinkingIndicator";
 
 const phaseConfig = {
@@ -28,36 +30,13 @@ const phaseConfig = {
   },
 };
 
-const PROVIDER_ICONS = {
+const ICON_COMPONENTS = {
   auto: Sparkles,
   gemini: Zap,
+  groq: Bolt,
   openrouter: Globe,
   openai: Cpu,
 };
-
-const PROVIDER_COLORS = {
-  auto: "text-purple-400",
-  gemini: "text-blue-400",
-  openrouter: "text-violet-400",
-  openai: "text-emerald-400",
-};
-
-function getErrorText(error) {
-  if (!error?.message) return "Something went wrong";
-  const msg = error.message;
-  if (error.type === "all_providers_unavailable") return msg;
-  if (error.type === "all_providers_failed") return msg;
-  if (msg.includes("429") || msg.includes("Too Many Requests") || msg.includes("RESOURCE_EXHAUSTED")) {
-    return "Rate limited. Switching provider...";
-  }
-  if (msg.includes("quota")) return "Daily quota exceeded";
-  if (msg.includes("503") || msg.includes("UNAVAILABLE")) return "Provider temporarily unavailable";
-  if (msg.includes("timeout") || msg.includes("Timeout")) return "Request timed out";
-  if (error.type === "provider_error") return msg;
-  if (error.type === "validation") return "AI response could not be applied";
-  if (error.type === "request") return msg;
-  return "Something went wrong. Please try again.";
-}
 
 export default function AIStatus({ phase = "idle", error = null }) {
   const config = phaseConfig[phase];
@@ -68,12 +47,17 @@ export default function AIStatus({ phase = "idle", error = null }) {
 
   const Icon = config.icon;
   const isThinking = phase === "understanding" || phase === "planning" || phase === "applying";
-  const displayText = phase === "error" ? getErrorText(error) : config.text;
 
   const activeId = aiActiveProvider || (aiProvider === "auto" ? "gemini" : aiProvider);
-  const ProviderIcon = PROVIDER_ICONS[activeId] || Sparkles;
-  const providerColor = PROVIDER_COLORS[activeId] || "text-zinc-400";
-  const providerName = activeId === "auto" ? "Auto" : activeId.charAt(0).toUpperCase() + activeId.slice(1);
+  const activeTheme = getProviderTheme(activeId);
+  const ProviderIcon = ICON_COMPONENTS[activeId] || Sparkles;
+
+  let displayText;
+  if (phase === "error") {
+    displayText = getFriendlyErrorMessage(error, activeId);
+  } else {
+    displayText = config.text;
+  }
 
   return (
     <div
@@ -83,13 +67,19 @@ export default function AIStatus({ phase = "idle", error = null }) {
     >
       {isThinking && <ThinkingIndicator />}
       {isThinking ? (
-        <ProviderIcon className={`size-3 ${providerColor}`} />
+        <>
+          <ProviderIcon className={`size-3 ${activeTheme.colorClass}`} />
+          <span className="font-medium">{activeTheme.name}</span>
+          <span className="text-zinc-500">{" "}&middot;{" "}</span>
+          <span>{displayText}</span>
+          <Activity className="size-3 animate-pulse text-purple-400" />
+        </>
       ) : Icon ? (
-        <Icon className="size-3" />
+        <>
+          <Icon className="size-3" />
+          <span>{displayText}</span>
+        </>
       ) : null}
-      <span>
-        {isThinking ? `${providerName} \u00B7 ` : ""}{displayText}
-      </span>
     </div>
   );
 }

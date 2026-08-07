@@ -1,0 +1,30 @@
+export {
+  PROVIDERS,
+  PROVIDER_LIST,
+  PROVIDER_PRIORITY,
+  CAPABILITIES,
+  CAPABILITY_LABELS,
+  CAPABILITY_COLORS,
+  getProvider,
+  getAllProviders,
+  getCapabilities,
+  supportsCapability,
+  getProviderByCapability,
+  getDefaultModel,
+  getModels,
+  getEnvKey,
+  hasApiKey,
+  getProviderIds,
+  getProvidersByPriority,
+  getProviderTheme,
+} from "./providerRegistry";
+
+export {
+  getRecommendedProvider,
+  getProviderScore,
+  rankProvidersForIntent,
+  getProvidersWithCapability,
+  getBestProviderForCapability,
+  meetsRequirements,
+  getCompatibleProviders,
+} from "./capabilityResolver";

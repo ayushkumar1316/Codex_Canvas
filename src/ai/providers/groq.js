@@ -1,6 +1,11 @@
-const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
-export const openAIProvider = {
+function truncatePrompt(prompt, maxChars = 12000) {
+  if (prompt.length <= maxChars) return prompt;
+  return prompt.slice(0, maxChars) + "\n\n[Truncated for Groq payload limit]";
+}
+
+export const groqProvider = {
   async execute({ systemPrompt, context, userPrompt, schema }) {
     const content = [
       {
@@ -21,9 +26,9 @@ export const openAIProvider = {
     }
 
     const body = {
-      model: import.meta.env.VITE_OPENAI_MODEL || "gpt-4o-mini",
+      model: import.meta.env.VITE_GROQ_MODEL || "llama-3.3-70b-versatile",
       messages: [
-        { role: "system", content: systemPrompt },
+        { role: "system", content: truncatePrompt(systemPrompt) },
         { role: "user", content },
       ],
       temperature: 0.1,
@@ -34,10 +39,10 @@ export const openAIProvider = {
       body.response_format = { type: "json_object" };
     }
 
-    const response = await fetch(OPENAI_API_URL, {
+    const response = await fetch(GROQ_API_URL, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
+        Authorization: `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
@@ -64,4 +69,4 @@ export const openAIProvider = {
   },
 };
 
-export default openAIProvider;
+export default groqProvider;

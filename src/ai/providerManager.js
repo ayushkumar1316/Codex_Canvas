@@ -1,6 +1,14 @@
 import openAIProvider from "./providers/openai";
 import openRouterProvider from "./providers/openrouter";
 import geminiProvider from "./providers/gemini";
+import groqProvider from "./providers/groq";
+import {
+  PROVIDER_LIST,
+  getProvider,
+  getCapabilities,
+  getDefaultModel,
+  hasApiKey as registryHasApiKey,
+} from "./providerRegistry";
 
 let _storeRef = null;
 
@@ -8,28 +16,46 @@ export function setStoreRef(store) {
   _storeRef = store;
 }
 
-const PROVIDER_LIST = ["gemini", "openrouter", "openai"];
-
 const PROVIDER_MAP = {
   gemini: geminiProvider,
+  groq: groqProvider,
   openrouter: openRouterProvider,
   openai: openAIProvider,
 };
 
+function buildProviderMeta(name) {
+  const provider = getProvider(name);
+  if (!provider) return null;
+  return {
+    name: provider.displayName,
+    model: provider.defaultModel,
+    capabilities: provider.capabilities,
+    envKey: provider.envKey,
+    priority: provider.priority,
+  };
+}
+
 const COOLDOWN_MS = 60_000;
 const FAILURE_THRESHOLD = 3;
+const HEALTH_CACHE_TTL = 5 * 60 * 1000;
 
 const health = {};
 for (const name of PROVIDER_LIST) {
   health[name] = {
+    status: "unknown",
     lastSuccess: 0,
     lastFailure: 0,
+    lastChecked: 0,
     failureCount: 0,
     cooldownUntil: 0,
     avgResponseTime: 0,
     totalRequests: 0,
+    retryCount: 0,
+    lastError: null,
   };
 }
+
+let healthCache = { timestamp: 0, results: {} };
 
 function isFatalError(error) {
   const msg = error?.message || "";
@@ -57,22 +83,30 @@ function isCooldownActive(name) {
 function recordSuccess(name, responseTime) {
   const h = health[name];
   h.lastSuccess = Date.now();
+  h.lastChecked = Date.now();
   h.failureCount = 0;
   h.cooldownUntil = 0;
   h.totalRequests += 1;
+  h.status = "ready";
+  h.lastError = null;
   h.avgResponseTime = h.totalRequests === 1
     ? responseTime
     : h.avgResponseTime * 0.8 + responseTime * 0.2;
 }
 
-function recordFailure(name) {
+function recordFailure(name, error) {
   const h = health[name];
   h.lastFailure = Date.now();
+  h.lastChecked = Date.now();
   h.failureCount += 1;
   h.totalRequests += 1;
+  h.lastError = error?.message || "Unknown error";
+
   if (h.failureCount >= FAILURE_THRESHOLD) {
     h.cooldownUntil = Date.now() + COOLDOWN_MS;
-    console.log(`[ProviderManager] ${name} entered cooldown for ${COOLDOWN_MS / 1000}s after ${h.failureCount} failures`);
+    h.status = "rate_limited";
+  } else {
+    h.status = "offline";
   }
 }
 
@@ -92,8 +126,26 @@ function getPreferredProvider() {
 }
 
 function getOrderedProviders() {
+  if (_storeRef) {
+    try {
+      const state = _storeRef.getState();
+      const selected = (state.aiProvider || "auto").toLowerCase();
+
+      if (selected !== "auto" && PROVIDER_MAP[selected]) {
+        const priority = state.providerPriority || PROVIDER_LIST;
+        const rest = priority.filter((n) => n !== selected && PROVIDER_MAP[n]);
+        return [selected, ...rest];
+      }
+
+      if (state.providerPriority && state.providerPriority.length > 0) {
+        return [...state.providerPriority].filter((n) => PROVIDER_MAP[n]);
+      }
+    } catch { /* fallback */ }
+  }
+
   const preferred = getPreferredProvider();
-  const rest = PROVIDER_LIST.filter((n) => n !== preferred);
+  const rest = PROVIDER_LIST.filter((n) => n !== preferred)
+    .sort((a, b) => (getProvider(a)?.priority ?? 99) - (getProvider(b)?.priority ?? 99));
   return [preferred, ...rest];
 }
 
@@ -101,24 +153,292 @@ function getAvailableProviders() {
   return getOrderedProviders().filter((n) => !isCooldownActive(n));
 }
 
-function getErrorMessage(error) {
-  const msg = error?.message || "";
-  if (msg.includes("429") || msg.includes("Too Many Requests") || msg.includes("RESOURCE_EXHAUSTED")) {
-    return "rate_limited";
+export function getProviderStatus(name) {
+  const h = health[name];
+  if (!h) return "unknown";
+  if (isCooldownActive(name)) return "rate_limited";
+  if (h.status === "rate_limited" && !isCooldownActive(name)) {
+    h.status = "ready";
   }
+  if (!hasApiKey(name)) return "api_key_missing";
+  return h.status === "unknown" ? "ready" : h.status;
+}
+
+export function hasApiKey(name) {
+  return registryHasApiKey(name);
+}
+
+export function getProviderCapabilities(name) {
+  return getCapabilities(name);
+}
+
+export function getProviderMeta(name) {
+  return buildProviderMeta(name);
+}
+
+export function getProviderModel(name) {
+  if (_storeRef) {
+    try {
+      const state = _storeRef.getState();
+      const selected = state.aiProvider;
+      const model = state.aiModel;
+      if (selected === name && model) {
+        const caps = getCapabilities(name);
+        if (caps.length > 0) return model;
+      }
+    } catch { /* fallback */ }
+  }
+  return getDefaultModel(name) || "Unknown";
+}
+
+export function getPriorityList() {
+  return getOrderedProviders();
+}
+
+export function setPriorityList(order) {
+  if (_storeRef) {
+    try {
+      const state = _storeRef.getState();
+      if (state.setProviderPriority) {
+        state.setProviderPriority(order);
+      }
+    } catch { /* noop */ }
+  }
+}
+
+export function getDiagnostics(name) {
+  const h = health[name];
+  if (!h) return null;
+  return {
+    provider: name,
+    status: getProviderStatus(name),
+    responseTime: Math.round(h.avgResponseTime),
+    lastError: h.lastError,
+    retryCount: h.retryCount,
+    currentModel: getProviderModel(name),
+    requestCount: h.totalRequests,
+    lastChecked: h.lastChecked,
+    lastSuccess: h.lastSuccess,
+    lastFailure: h.lastFailure,
+    failureCount: h.failureCount,
+    cooldownActive: isCooldownActive(name),
+    cooldownUntil: h.cooldownUntil,
+    hasApiKey: hasApiKey(name),
+    capabilities: getProviderCapabilities(name),
+  };
+}
+
+export function getAllDiagnostics() {
+  return PROVIDER_LIST.map((name) => getDiagnostics(name)).filter(Boolean);
+}
+
+export function isHealthCacheValid() {
+  return Date.now() - healthCache.timestamp < HEALTH_CACHE_TTL;
+}
+
+export function getCachedHealth() {
+  if (isHealthCacheValid()) {
+    return { ...healthCache.results };
+  }
+  return null;
+}
+
+export async function runHealthCheck(force = false) {
+  if (!force && isHealthCacheValid()) {
+    return { ...healthCache.results };
+  }
+
+  const results = {};
+
+  for (const name of PROVIDER_LIST) {
+    const hasKey = hasApiKey(name);
+    if (!hasKey) {
+      health[name].status = "api_key_missing";
+      health[name].lastChecked = Date.now();
+      results[name] = {
+        status: "api_key_missing",
+        hasApiKey: false,
+        capabilities: getProviderCapabilities(name),
+        model: getProviderModel(name),
+        lastChecked: Date.now(),
+      };
+      continue;
+    }
+
+    if (isCooldownActive(name)) {
+      results[name] = {
+        status: "rate_limited",
+        hasApiKey: true,
+        capabilities: getProviderCapabilities(name),
+        model: getProviderModel(name),
+        lastChecked: health[name].lastChecked,
+        cooldownUntil: health[name].cooldownUntil,
+      };
+      continue;
+    }
+
+    health[name].status = "ready";
+    health[name].lastChecked = Date.now();
+    results[name] = {
+      status: "ready",
+      hasApiKey: true,
+      capabilities: getProviderCapabilities(name),
+      model: getProviderModel(name),
+      lastChecked: Date.now(),
+    };
+  }
+
+  healthCache = { timestamp: Date.now(), results };
+  return { ...results };
+}
+
+export async function testConnection(name) {
+  const provider = PROVIDER_MAP[name];
+  if (!provider) {
+    return { success: false, status: "offline", message: "Provider not found" };
+  }
+
+  if (!hasApiKey(name)) {
+    const meta = buildProviderMeta(name);
+    return {
+      success: false,
+      status: "api_key_missing",
+      message: `${meta?.name || name} API key missing. Add ${meta?.envKey || "API key"} to your .env file.`,
+    };
+  }
+
+  if (isCooldownActive(name)) {
+    const remaining = Math.ceil((health[name].cooldownUntil - Date.now()) / 1000);
+    return {
+      success: false,
+      status: "rate_limited",
+      message: `Rate limited. Try again in ${remaining}s.`,
+    };
+  }
+
+  const start = Date.now();
+  try {
+    const meta = buildProviderMeta(name);
+    const apiKey = import.meta.env[meta.envKey];
+    let testUrl, testBody, testHeaders;
+
+    if (name === "gemini") {
+      testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${getProviderModel(name)}:generateContent?key=${apiKey}`;
+      testBody = JSON.stringify({ contents: [{ parts: [{ text: "Hi" }] }] });
+      testHeaders = { "Content-Type": "application/json" };
+    } else if (name === "groq") {
+      testUrl = "https://api.groq.com/openai/v1/chat/completions";
+      testBody = JSON.stringify({ model: getProviderModel(name), messages: [{ role: "user", content: "Hi" }], max_tokens: 1 });
+      testHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` };
+    } else if (name === "openrouter") {
+      testUrl = "https://openrouter.ai/api/v1/chat/completions";
+      testBody = JSON.stringify({ model: getProviderModel(name), messages: [{ role: "user", content: "Hi" }], max_tokens: 1 });
+      testHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` };
+    } else if (name === "openai") {
+      testUrl = "https://api.openai.com/v1/chat/completions";
+      testBody = JSON.stringify({ model: getProviderModel(name), messages: [{ role: "user", content: "Hi" }], max_tokens: 1 });
+      testHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` };
+    } else {
+      throw new Error("Unknown provider");
+    }
+
+    const res = await fetch(testUrl, {
+      method: "POST",
+      headers: testHeaders,
+      body: testBody,
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData?.error?.message || `HTTP ${res.status}`);
+    }
+
+    const elapsed = Date.now() - start;
+    recordSuccess(name, elapsed);
+    return {
+      success: true,
+      status: "ready",
+      message: `Connection successful (${elapsed}ms)`,
+      responseTime: elapsed,
+    };
+  } catch (error) {
+    const elapsed = Date.now() - start;
+    recordFailure(name, error);
+
+    let message = `Connection failed: ${error.message}`;
+    if (elapsed > 10_000) {
+      message = "Connection timed out.";
+    }
+
+    return {
+      success: false,
+      status: health[name].status,
+      message,
+      responseTime: elapsed,
+    };
+  }
+}
+
+export function getFriendlyErrorMessage(error, providerName) {
+  if (!error) return "Something went wrong. Please try again.";
+
+  const type = error.type || "";
+  const msg = error.message || "";
+
+  if (type === "all_providers_unavailable") {
+    return "All providers are temporarily rate limited. Please wait a moment and try again.";
+  }
+
+  if (type === "all_providers_failed") {
+    return "All providers failed. Please check your API keys and try again.";
+  }
+
+  if (type === "validation") {
+    return "AI response could not be applied. The response format was invalid.";
+  }
+
+  if (msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED")) {
+    const p = providerName ? getProvider(providerName) : null;
+    const name = p?.displayName || providerName || "Provider";
+    return `${name} quota exceeded. Switching to another provider...`;
+  }
+
   if (msg.includes("quota")) {
-    return "quota_exceeded";
+    const p = providerName ? getProvider(providerName) : null;
+    const name = p?.displayName || providerName || "Provider";
+    return `${name} daily quota exceeded.`;
   }
-  if (msg.includes("503") || msg.includes("UNAVAILABLE") || msg.includes("Server Error")) {
-    return "server_error";
+
+  if (msg.includes("API key") || msg.includes("invalid_key") || msg.includes("401")) {
+    const p = providerName ? getProvider(providerName) : null;
+    const name = p?.displayName || providerName || "Provider";
+    return `${name} API key is invalid or missing.`;
   }
-  if (msg.includes("timeout") || msg.includes("Timeout")) {
-    return "timeout";
+
+  if (msg.includes("503") || msg.includes("UNAVAILABLE")) {
+    const p = providerName ? getProvider(providerName) : null;
+    const name = p?.displayName || providerName || "Provider";
+    return `${name} is temporarily unavailable. Retrying...`;
   }
-  if (isFatalError(error)) {
-    return "fatal";
+
+  if (msg.includes("timeout")) {
+    return "Request timed out. The model may be overloaded.";
   }
-  return "unknown";
+
+  if (msg.includes("Network") || msg.includes("network") || msg.includes("fetch")) {
+    return "Network connection lost. Please check your internet connection.";
+  }
+
+  if (type === "provider_error") {
+    return msg;
+  }
+
+  if (type === "request") {
+    return msg;
+  }
+
+  return "Something went wrong. Please try again.";
 }
 
 export async function executeWithFallback({ systemPrompt, context, userPrompt, schema }) {
@@ -144,41 +464,47 @@ export async function executeWithFallback({ systemPrompt, context, userPrompt, s
     } catch { /* noop */ }
   }
 
-  for (const providerName of candidates) {
+  for (let i = 0; i < candidates.length; i++) {
+    const providerName = candidates[i];
     const provider = PROVIDER_MAP[providerName];
     if (!provider) continue;
 
+    health[providerName].retryCount = i;
+    health[providerName].status = "busy";
+
     const start = Date.now();
     try {
-      console.log(`[ProviderManager] Trying ${providerName}...`);
       const response = await provider.execute({ systemPrompt, context, userPrompt, schema });
       const elapsed = Date.now() - start;
       recordSuccess(providerName, elapsed);
-      console.log(`[ProviderManager] ${providerName} succeeded in ${elapsed}ms`);
       return { success: true, response, provider: providerName, error: null };
     } catch (error) {
-      const elapsed = Date.now() - start;
-      recordFailure(providerName);
-      const errorCategory = getErrorMessage(error);
-      console.warn(`[ProviderManager] ${providerName} failed (${elapsed}ms):`, errorCategory, error.message);
+      recordFailure(providerName, error);
 
       if (isFatalError(error)) {
-        console.log(`[ProviderManager] ${providerName} has fatal error, not falling back`);
         return {
           success: false,
           error: {
             type: "provider_error",
-            message: `Provider ${providerName} encountered an error: ${error.message}`,
+            message: getFriendlyErrorMessage({ type: "provider_error", message: error.message }, providerName),
             provider: providerName,
           },
           provider: providerName,
         };
       }
 
-      const remaining = candidates.filter((n) => n !== providerName);
-      if (remaining.length > 0) {
-        const nextName = remaining[0];
-        console.log(`[ProviderManager] Falling back to ${nextName}...`);
+      if (i < candidates.length - 1) {
+        const nextName = candidates[i + 1];
+        const nextMeta = getProvider(nextName);
+        if (_storeRef) {
+          try {
+            const state = _storeRef.getState();
+            if (state.setAIActiveProvider) {
+              state.setAIActiveProvider(nextName);
+            }
+          } catch { /* noop */ }
+        }
+        console.log(`[ProviderManager] Falling back to ${nextMeta?.displayName || nextName}...`);
       }
     }
   }
@@ -201,5 +527,12 @@ export function resetProviderHealth(name) {
   if (health[name]) {
     health[name].failureCount = 0;
     health[name].cooldownUntil = 0;
+    health[name].status = "ready";
+    health[name].lastError = null;
+    health[name].retryCount = 0;
   }
+}
+
+export function refreshHealthCache() {
+  return runHealthCheck(true);
 }

@@ -203,6 +203,9 @@ export const useAppStore = create(
       aiModel: null,
       aiActiveProvider: null,
 
+      providerHealth: {},
+      providerPriority: ["gemini", "groq", "openrouter", "openai"],
+
       canUndo: false,
       canRedo: false,
 
@@ -551,6 +554,18 @@ export const useAppStore = create(
         });
       },
 
+      setProviderHealth: (healthData) => {
+        set((state) => {
+          state.providerHealth = { ...state.providerHealth, ...healthData };
+        });
+      },
+
+      setProviderPriority: (priority) => {
+        set((state) => {
+          state.providerPriority = [...priority];
+        });
+      },
+
       submitAICommand: async (command) => {
         if (get().aiLoading) return;
 
@@ -636,6 +651,7 @@ export const useAppStore = create(
         editorMode: state.editorMode,
         aiProvider: state.aiProvider,
         aiModel: state.aiModel,
+        providerPriority: state.providerPriority,
       }),
     }
   )

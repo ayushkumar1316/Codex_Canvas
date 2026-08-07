@@ -57,7 +57,11 @@ export const openRouterProvider = {
       throw new Error("No content in API response");
     }
 
-    return JSON.parse(responseBody);
+    let cleaned = responseBody.trim();
+    cleaned = cleaned.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "");
+    cleaned = cleaned.trim();
+
+    return JSON.parse(cleaned);
   },
 };
 
