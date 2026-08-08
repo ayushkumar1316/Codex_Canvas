@@ -12,6 +12,15 @@ import {
   VALID_AVAILABILITY_LEVELS,
   VALIDATION_ERROR,
 } from "./modelTypes";
+import {
+  getCapabilityMapping,
+  getPrimaryModel,
+  getFallbackModels,
+  getEmergencyModels,
+  getAllCapabilityMappings,
+  getCapabilityIds,
+  validateCapabilityMappings,
+} from "./capabilityModelMap";
 
 export function getModel(id) {
   return modelCatalog.find((model) => model.id === id) || null;
@@ -101,3 +110,13 @@ export {
 };
 
 export { modelCatalog };
+
+export {
+  getCapabilityMapping,
+  getPrimaryModel,
+  getFallbackModels,
+  getEmergencyModels,
+  getAllCapabilityMappings,
+  getCapabilityIds,
+  validateCapabilityMappings,
+};
