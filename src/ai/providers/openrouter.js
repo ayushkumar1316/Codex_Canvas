@@ -6,7 +6,7 @@ function truncatePrompt(prompt, maxChars = 10000) {
 }
 
 export const openRouterProvider = {
-  async execute({ systemPrompt, context, userPrompt }) {
+  async execute({ systemPrompt, context, userPrompt, model: resolvedModel }) {
     const content = [
       {
         type: "text",
@@ -25,6 +25,8 @@ export const openRouterProvider = {
       });
     }
 
+    const modelId = resolvedModel || import.meta.env.VITE_OPENROUTER_MODEL || "nvidia/nemotron-3-ultra-550b-a55b:free";
+
     const response = await fetch(OPENROUTER_API_URL, {
       method: "POST",
       headers: {
@@ -34,7 +36,7 @@ export const openRouterProvider = {
         "X-Title": "Codex Canvas",
       },
       body: JSON.stringify({
-        model: import.meta.env.VITE_OPENROUTER_MODEL || "openai/gpt-5",
+        model: modelId,
         messages: [
           {
             role: "system",
