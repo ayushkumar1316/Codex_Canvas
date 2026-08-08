@@ -1,7 +1,10 @@
 import { VALIDATION_CODES, COLOR_PATTERN, SPACING_PATTERN, FONT_SIZE_PATTERN } from "./validationRules";
 
-function createWarning(code, message, path = "") {
-  return { code, message, path, warning: true };
+function createWarning(codeDef, message, path = "") {
+  const def = typeof codeDef === "string"
+    ? Object.values(VALIDATION_CODES).find((c) => c.code === codeDef)
+    : codeDef;
+  return { code: def.code, severity: def.severity, message: message || def.message, path, warning: true };
 }
 
 function isValidColor(value) {
@@ -51,25 +54,25 @@ function validateStyleValue(key, value, path, errors, warnings) {
 
   if (COLOR_PROPERTIES.includes(key)) {
     if (!isValidColor(strValue)) {
-      warnings.push(createWarning(VALIDATION_CODES.INVALID_COLOR.code, `Invalid color for ${key}: ${strValue}`, path));
+      warnings.push(createWarning(VALIDATION_CODES.INVALID_COLOR, `Invalid color for ${key}: ${strValue}`, path));
     }
   }
 
   if (SPACING_PROPERTIES.includes(key)) {
     if (!isValidSpacing(strValue)) {
-      warnings.push(createWarning(VALIDATION_CODES.INVALID_SPACING.code, `Invalid spacing for ${key}: ${strValue}`, path));
+      warnings.push(createWarning(VALIDATION_CODES.INVALID_SPACING, `Invalid spacing for ${key}: ${strValue}`, path));
     }
   }
 
   if (FONT_PROPERTIES.includes(key)) {
     if (!isValidFontSize(strValue)) {
-      warnings.push(createWarning(VALIDATION_CODES.INVALID_FONT_SIZE.code, `Invalid font size for ${key}: ${strValue}`, path));
+      warnings.push(createWarning(VALIDATION_CODES.INVALID_FONT_SIZE, `Invalid font size for ${key}: ${strValue}`, path));
     }
   }
 
   if (WIDTH_HEIGHT_PROPERTIES.includes(key)) {
     if (!isValidWidthHeight(strValue)) {
-      warnings.push(createWarning(VALIDATION_CODES.INVALID_STYLE_VALUE.code, `Invalid width/height for ${key}: ${strValue}`, path));
+      warnings.push(createWarning(VALIDATION_CODES.INVALID_STYLE_VALUE, `Invalid width/height for ${key}: ${strValue}`, path));
     }
   }
 }

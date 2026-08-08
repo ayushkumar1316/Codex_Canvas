@@ -1,5 +1,10 @@
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
+function truncatePrompt(prompt, maxChars = 10000) {
+  if (prompt.length <= maxChars) return prompt;
+  return prompt.slice(0, maxChars) + "\n\n[Truncated to fit token budget]";
+}
+
 export const openRouterProvider = {
   async execute({ systemPrompt, context, userPrompt }) {
     const content = [
@@ -33,7 +38,7 @@ export const openRouterProvider = {
         messages: [
           {
             role: "system",
-            content: systemPrompt,
+            content: truncatePrompt(systemPrompt),
           },
           {
             role: "user",
@@ -41,6 +46,7 @@ export const openRouterProvider = {
           },
         ],
         response_format: { type: "json_object" },
+        max_tokens: 2048,
       }),
     });
 

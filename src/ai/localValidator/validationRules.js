@@ -21,9 +21,6 @@ export const VALIDATION_CODES = {
   INVALID_COLOR: { code: "INVALID_COLOR", severity: VALIDATION_SEVERITY.MINOR, message: "Invalid color value" },
   INVALID_SPACING: { code: "INVALID_SPACING", severity: VALIDATION_SEVERITY.MINOR, message: "Invalid spacing value" },
   INVALID_FONT_SIZE: { code: "INVALID_FONT_SIZE", severity: VALIDATION_SEVERITY.MINOR, message: "Invalid font size" },
-  MISSING_OPS: { code: "MISSING_OPS", severity: VALIDATION_SEVERITY.CRITICAL, message: "Operations array is missing" },
-  INVALID_OP_TYPE: { code: "INVALID_OP_TYPE", severity: VALIDATION_SEVERITY.MAJOR, message: "Invalid operation type" },
-  MISSING_OP_FIELDS: { code: "MISSING_OP_FIELDS", severity: VALIDATION_SEVERITY.MAJOR, message: "Operation missing required fields" },
 };
 
 export const SUPPORTED_COMPONENT_TYPES = new Set([
@@ -31,10 +28,18 @@ export const SUPPORTED_COMPONENT_TYPES = new Set([
   "input", "textarea", "image", "card",
 ]);
 
-export const SUPPORTED_OPERATION_TYPES = new Set([
-  "updateProps", "updateStyles", "insertNode", "deleteNode", "replaceNode",
-]);
-
 export const COLOR_PATTERN = /^(#[0-9a-fA-F]{3,8}|rgba?\(|hsla?\(|[a-z]+)$/i;
 export const SPACING_PATTERN = /^(\d+(\.\d+)?(px|rem|em|%|vh|vw)?)$/i;
 export const FONT_SIZE_PATTERN = /^(\d+(\.\d+)?(px|rem|em)?)$/i;
+
+export const NESTING_RULES = {
+  heading: ["container", "card", "root"],
+  button: ["container", "card", "root"],
+  input: ["container", "card", "root"],
+  textarea: ["container", "card", "root"],
+  image: ["container", "card", "root"],
+  text: ["container", "card", "root"],
+  card: ["container", "root"],
+  container: ["root"],
+  root: [],
+};

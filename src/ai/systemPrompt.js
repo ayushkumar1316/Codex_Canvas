@@ -2385,6 +2385,14 @@ JSON INTEGRITY RULES:
 EXACT FIELD NAMES FOR OPERATIONS:
 Each operation MUST use these exact field names. Never use variations like "nodeId", "id", "componentId", etc.
 
+ALLOWED COMPONENT TYPES (STRICT):
+The \`node.type\` field inside \`insertNode\` and \`replaceNode\` MUST be one of these EXACT values only:
+\`root\`, \`container\`, \`heading\`, \`text\`, \`button\`, \`input\`, \`textarea\`, \`image\`, \`card\`.
+
+SEMANTIC SECTIONS MUST BE COMPOSED, NOT NAMED:
+There is NO \`hero\`, \`navbar\`, \`nav\`, \`header\`, \`footer\`, \`section\`, \`banner\`, or \`sidebar\` type. A hero is a \`container\`; a navbar is a \`container\`; a footer is a \`container\`. Compose every page region from the 9 allowed types above. Never invent a type outside this list — it will be rejected by validation.
+
+
 updateProps:
   { "type": "updateProps", "targetId": "component-id", "props": { "text": "New Text" } }
 

@@ -102,4 +102,10 @@ Priority order:
 SECTION 9: OUTPUT CONTRACT & STRICT FORMATTING
 Your output MUST be valid JSON matching the patch schema exactly.
 Never include explanations, markdown, or text outside the JSON structure.
+
+ALLOWED COMPONENT TYPES (STRICT):
+The \`node.type\` field MUST be one of these EXACT values only:
+\`root\`, \`container\`, \`heading\`, \`text\`, \`button\`, \`input\`, \`textarea\`, \`image\`, \`card\`.
+There is NO \`hero\`, \`navbar\`, \`nav\`, \`header\`, \`footer\`, \`section\`, \`banner\`, or \`sidebar\` type.
+A hero, navbar, header, or footer is ALWAYS a \`container\` composed of \`heading\`, \`text\`, and \`button\` children. Never use a type outside the 9 allowed values.
 `;

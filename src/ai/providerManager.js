@@ -9,6 +9,7 @@ import {
   getDefaultModel,
   hasApiKey as registryHasApiKey,
 } from "./providerRegistry";
+import { modelCatalog } from "./models/modelCatalog";
 
 let _storeRef = null;
 
@@ -521,6 +522,111 @@ export async function executeWithFallback({ systemPrompt, context, userPrompt, s
 
 export function getProviderHealth() {
   return { ...health };
+}
+
+export function modelToProvider(modelId) {
+  if (!modelId || typeof modelId !== "string") return null;
+  const catalogEntry = modelCatalog.find((m) => m.id === modelId);
+  if (catalogEntry) {
+    const providerType = catalogEntry.providerType;
+    if (PROVIDER_MAP[providerType]) return providerType;
+    if (providerType === "openrouter") return "openrouter";
+    if (providerType === "direct") {
+      const providerSlug = modelId.split("/")[0];
+      if (PROVIDER_MAP[providerSlug]) return providerSlug;
+    }
+  }
+  const slashIdx = modelId.indexOf("/");
+  if (slashIdx > 0) {
+    const slug = modelId.substring(0, slashIdx);
+    if (PROVIDER_MAP[slug]) return slug;
+  }
+  return null;
+}
+
+export async function executeWithResolution(resolution, { systemPrompt, context, userPrompt, schema }) {
+  if (!resolution || !resolution.primary) {
+    return executeWithFallback({ systemPrompt, context, userPrompt, schema });
+  }
+
+  const candidateModelIds = [
+    resolution.primary,
+    ...(resolution.fallbacks || []),
+    ...(resolution.emergency || []),
+  ];
+
+  const candidates = [];
+  const seen = new Set();
+  for (const modelId of candidateModelIds) {
+    const providerName = modelToProvider(modelId);
+    if (providerName && !seen.has(providerName)) {
+      seen.add(providerName);
+      candidates.push(providerName);
+    }
+  }
+
+  if (candidates.length === 0) {
+    return executeWithFallback({ systemPrompt, context, userPrompt, schema });
+  }
+
+  const availableCandidates = candidates.filter((n) => !isCooldownActive(n));
+  const orderedCandidates = availableCandidates.length > 0 ? availableCandidates : candidates;
+
+  if (_storeRef) {
+    try {
+      const state = _storeRef.getState();
+      if (state.setAIActiveProvider) {
+        state.setAIActiveProvider(orderedCandidates[0]);
+      }
+    } catch { /* noop */ }
+  }
+
+  for (let i = 0; i < orderedCandidates.length; i++) {
+    const providerName = orderedCandidates[i];
+    const provider = PROVIDER_MAP[providerName];
+    if (!provider) continue;
+
+    health[providerName].retryCount = i;
+    health[providerName].status = "busy";
+
+    const start = Date.now();
+    try {
+      const response = await provider.execute({ systemPrompt, context, userPrompt, schema });
+      const elapsed = Date.now() - start;
+      recordSuccess(providerName, elapsed);
+      return { success: true, response, provider: providerName, error: null };
+    } catch (error) {
+      recordFailure(providerName, error);
+
+      if (isFatalError(error)) {
+        return {
+          success: false,
+          error: {
+            type: "provider_error",
+            message: getFriendlyErrorMessage({ type: "provider_error", message: error.message }, providerName),
+            provider: providerName,
+          },
+          provider: providerName,
+        };
+      }
+
+      if (i < orderedCandidates.length - 1) {
+        const nextName = orderedCandidates[i + 1];
+        const nextMeta = getProvider(nextName);
+        if (_storeRef) {
+          try {
+            const state = _storeRef.getState();
+            if (state.setAIActiveProvider) {
+              state.setAIActiveProvider(nextName);
+            }
+          } catch { /* noop */ }
+        }
+        console.log(`[ProviderManager] Resolution fallback: ${nextMeta?.displayName || nextName}...`);
+      }
+    }
+  }
+
+  return executeWithFallback({ systemPrompt, context, userPrompt, schema });
 }
 
 export function resetProviderHealth(name) {
