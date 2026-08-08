@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const MODEL_NAME = "gemini-3.5-flash-lite";
+const MODEL_NAME = import.meta.env.VITE_GEMINI_MODEL || "gemini-3.6-flash";
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 2000;
 

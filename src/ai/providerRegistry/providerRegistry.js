@@ -44,7 +44,7 @@ export const PROVIDERS = {
     description: "Fast · Native Vision",
     priority: 1,
     envKey: "VITE_GEMINI_API_KEY",
-    defaultModel: "gemini-2.0-flash",
+    defaultModel: "gemini-3.6-flash",
     capabilities: ["vision", "voice", "streaming", "jsonMode", "generation", "editing"],
     performance: {
       speed: "fast",
@@ -53,10 +53,12 @@ export const PROVIDERS = {
       recommendedFor: ["generation", "vision", "general"],
     },
     models: [
+      { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash" },
+      { id: "gemini-3.5-flash", name: "Gemini 3.5 Flash" },
+      { id: "gemini-3.5-flash-lite", name: "Gemini 3.5 Flash-Lite" },
+      { id: "gemini-3.1-flash-lite", name: "Gemini 3.1 Flash-Lite" },
+      { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
       { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash" },
-      { id: "gemini-3.5-flash-lite", name: "Gemini 3.5 Flash Lite" },
-      { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash" },
-      { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro" },
     ],
   },
 
