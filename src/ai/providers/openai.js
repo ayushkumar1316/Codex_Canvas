@@ -1,7 +1,7 @@
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 
 export const openAIProvider = {
-  async execute({ systemPrompt, context, userPrompt, schema }) {
+  async execute({ systemPrompt, context, userPrompt, schema, model: resolvedModel }) {
     const content = [
       {
         type: "text",
@@ -21,7 +21,7 @@ export const openAIProvider = {
     }
 
     const body = {
-      model: import.meta.env.VITE_OPENAI_MODEL || "gpt-4o-mini",
+      model: resolvedModel || import.meta.env.VITE_OPENAI_MODEL || "gpt-4o-mini",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content },

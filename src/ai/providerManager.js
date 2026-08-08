@@ -561,7 +561,7 @@ export async function executeWithResolution(resolution, { systemPrompt, context,
     const providerName = modelToProvider(modelId);
     if (providerName && !seen.has(providerName)) {
       seen.add(providerName);
-      candidates.push(providerName);
+      candidates.push({ providerName, modelId });
     }
   }
 
@@ -569,20 +569,20 @@ export async function executeWithResolution(resolution, { systemPrompt, context,
     return executeWithFallback({ systemPrompt, context, userPrompt, schema });
   }
 
-  const availableCandidates = candidates.filter((n) => !isCooldownActive(n));
+  const availableCandidates = candidates.filter((c) => !isCooldownActive(c.providerName));
   const orderedCandidates = availableCandidates.length > 0 ? availableCandidates : candidates;
 
   if (_storeRef) {
     try {
       const state = _storeRef.getState();
       if (state.setAIActiveProvider) {
-        state.setAIActiveProvider(orderedCandidates[0]);
+        state.setAIActiveProvider(orderedCandidates[0].providerName);
       }
     } catch { /* noop */ }
   }
 
   for (let i = 0; i < orderedCandidates.length; i++) {
-    const providerName = orderedCandidates[i];
+    const { providerName, modelId } = orderedCandidates[i];
     const provider = PROVIDER_MAP[providerName];
     if (!provider) continue;
 
@@ -591,7 +591,7 @@ export async function executeWithResolution(resolution, { systemPrompt, context,
 
     const start = Date.now();
     try {
-      const response = await provider.execute({ systemPrompt, context, userPrompt, schema });
+      const response = await provider.execute({ systemPrompt, context, userPrompt, schema, model: modelId });
       const elapsed = Date.now() - start;
       recordSuccess(providerName, elapsed);
       return { success: true, response, provider: providerName, error: null };
@@ -611,7 +611,7 @@ export async function executeWithResolution(resolution, { systemPrompt, context,
       }
 
       if (i < orderedCandidates.length - 1) {
-        const nextName = orderedCandidates[i + 1];
+        const nextName = orderedCandidates[i + 1].providerName;
         const nextMeta = getProvider(nextName);
         if (_storeRef) {
           try {

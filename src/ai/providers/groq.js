@@ -6,7 +6,7 @@ function truncatePrompt(prompt, maxChars = 12000) {
 }
 
 export const groqProvider = {
-  async execute({ systemPrompt, context, userPrompt, schema }) {
+  async execute({ systemPrompt, context, userPrompt, schema, model: resolvedModel }) {
     const content = [
       {
         type: "text",
@@ -26,7 +26,7 @@ export const groqProvider = {
     }
 
     const body = {
-      model: import.meta.env.VITE_GROQ_MODEL || "llama-3.3-70b-versatile",
+      model: resolvedModel || import.meta.env.VITE_GROQ_MODEL || "llama-3.3-70b-versatile",
       messages: [
         { role: "system", content: truncatePrompt(systemPrompt) },
         { role: "user", content },

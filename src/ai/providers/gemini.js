@@ -21,15 +21,17 @@ function delay(ms) {
 }
 
 export const geminiProvider = {
-  async execute({ systemPrompt, context, userPrompt }) {
+  async execute({ systemPrompt, context, userPrompt, model: resolvedModel }) {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     if (!apiKey) {
       throw new Error("VITE_GEMINI_API_KEY is not set");
     }
 
+    const modelName = resolvedModel || MODEL_NAME;
+
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: MODEL_NAME,
+      model: modelName,
       systemInstruction: systemPrompt,
     });
 
