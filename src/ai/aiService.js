@@ -16,9 +16,20 @@ import { analyzeCanvasIntelligence } from "./canvas";
 import { routeCapability } from "./capabilities";
 import { buildDynamicPrompt } from "./constitution";
 import { runRepairPipeline } from "./repair/repairPipeline";
+import { responseCache } from "./responseCache";
 
 const DEFAULT_REGISTRY = Object.keys(componentRegistry);
 const IS_DEV = import.meta.env.DEV;
+
+function hashString(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return hash.toString(36);
+}
 
 function devLog(stage, data) {
   if (IS_DEV) {
@@ -186,13 +197,38 @@ export async function executeAICommand(command) {
     devTime("Provider Selection + API Call");
     let fallbackResult;
     const resolved = capabilityResult.resolution?.resolution;
-    if (capabilityResult.success && resolved?.primary) {
+
+    const cacheKey = {
+      prompt: effectivePrompt,
+      treeHash: hashString(JSON.stringify(command.componentTree)),
+      strategy: strategy.strategy,
+      intent: intentRoute.intent,
+    };
+
+    const cachedResponse = responseCache.get(
+      effectivePrompt,
+      command.componentTree,
+      resolved?.primary?.provider || "auto"
+    );
+
+    if (cachedResponse) {
+      devLog("Cache Hit", { provider: cachedResponse.provider });
+      fallbackResult = cachedResponse;
+    } else if (capabilityResult.success && resolved?.primary) {
       fallbackResult = await executeWithResolution(resolved, {
         systemPrompt: constitution || SYSTEM_PROMPT,
         context,
         userPrompt: effectivePrompt,
         schema: aiPatchSchema,
       });
+      if (fallbackResult.success) {
+        responseCache.set(
+          effectivePrompt,
+          command.componentTree,
+          resolved?.primary?.provider || "auto",
+          fallbackResult
+        );
+      }
     } else {
       fallbackResult = await executeWithFallback({
         systemPrompt: constitution || SYSTEM_PROMPT,
@@ -332,6 +368,8 @@ export async function executeAICommand(command) {
       componentTree: updatedComponentTree,
       error: null,
       provider: fallbackResult.provider,
+      cached: !!cachedResponse,
+      cacheStats: responseCache.stats(),
       optimization: {
         promptType: optimized.promptType,
         confidence: optimized.confidence,

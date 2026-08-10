@@ -1,7 +1,3 @@
-import openAIProvider from "./providers/openai";
-import openRouterProvider from "./providers/openrouter";
-import geminiProvider from "./providers/gemini";
-import groqProvider from "./providers/groq";
 import {
   PROVIDER_LIST,
   getProvider,
@@ -17,12 +13,30 @@ export function setStoreRef(store) {
   _storeRef = store;
 }
 
-const PROVIDER_MAP = {
-  gemini: geminiProvider,
-  groq: groqProvider,
-  openrouter: openRouterProvider,
-  openai: openAIProvider,
+const providerModules = {};
+const providerLoaders = {
+  gemini: () => import("./providers/gemini"),
+  groq: () => import("./providers/groq"),
+  openrouter: () => import("./providers/openrouter"),
+  openai: () => import("./providers/openai"),
 };
+
+const PROVIDER_MAP = {};
+
+async function loadProvider(name) {
+  if (providerModules[name]) return providerModules[name];
+  const loader = providerLoaders[name];
+  if (!loader) return null;
+  try {
+    const mod = await loader();
+    providerModules[name] = mod.default;
+    PROVIDER_MAP[name] = mod.default;
+    return mod.default;
+  } catch (e) {
+    console.error(`[ProviderManager] Failed to load ${name}:`, e);
+    return null;
+  }
+}
 
 function buildProviderMeta(name) {
   const provider = getProvider(name);
@@ -117,12 +131,12 @@ function getPreferredProvider() {
       const state = _storeRef.getState();
       const pref = (state.aiProvider || "auto").toLowerCase();
       if (pref !== "auto") {
-        if (PROVIDER_MAP[pref]) return pref;
+        if (providerLoaders[pref]) return pref;
       }
     } catch { /* fallback to env */ }
   }
   const pref = (import.meta.env.VITE_AI_PROVIDER || "gemini").toLowerCase();
-  if (PROVIDER_MAP[pref]) return pref;
+  if (providerLoaders[pref]) return pref;
   return "gemini";
 }
 
@@ -132,14 +146,14 @@ function getOrderedProviders() {
       const state = _storeRef.getState();
       const selected = (state.aiProvider || "auto").toLowerCase();
 
-      if (selected !== "auto" && PROVIDER_MAP[selected]) {
+      if (selected !== "auto" && providerLoaders[selected]) {
         const priority = state.providerPriority || PROVIDER_LIST;
-        const rest = priority.filter((n) => n !== selected && PROVIDER_MAP[n]);
+        const rest = priority.filter((n) => n !== selected && providerLoaders[n]);
         return [selected, ...rest];
       }
 
       if (state.providerPriority && state.providerPriority.length > 0) {
-        return [...state.providerPriority].filter((n) => PROVIDER_MAP[n]);
+        return [...state.providerPriority].filter((n) => providerLoaders[n]);
       }
     } catch { /* fallback */ }
   }
@@ -294,7 +308,7 @@ export async function runHealthCheck(force = false) {
 }
 
 export async function testConnection(name) {
-  const provider = PROVIDER_MAP[name];
+  const provider = await loadProvider(name);
   if (!provider) {
     return { success: false, status: "offline", message: "Provider not found" };
   }
@@ -468,7 +482,7 @@ export async function executeWithFallback({ systemPrompt, context, userPrompt, s
 
   for (let i = 0; i < candidates.length; i++) {
     const providerName = candidates[i];
-    const provider = PROVIDER_MAP[providerName];
+    const provider = await loadProvider(providerName);
     if (!provider) continue;
 
     health[providerName].retryCount = i;
@@ -530,17 +544,17 @@ export function modelToProvider(modelId) {
   const catalogEntry = modelCatalog.find((m) => m.id === modelId);
   if (catalogEntry) {
     const providerType = catalogEntry.providerType;
-    if (PROVIDER_MAP[providerType]) return providerType;
+    if (providerLoaders[providerType]) return providerType;
     if (providerType === "openrouter") return "openrouter";
     if (providerType === "direct") {
       const providerSlug = modelId.split("/")[0];
-      if (PROVIDER_MAP[providerSlug]) return providerSlug;
+      if (providerLoaders[providerSlug]) return providerSlug;
     }
   }
   const slashIdx = modelId.indexOf("/");
   if (slashIdx > 0) {
     const slug = modelId.substring(0, slashIdx);
-    if (PROVIDER_MAP[slug]) return slug;
+    if (providerLoaders[slug]) return slug;
   }
   return null;
 }
@@ -584,7 +598,7 @@ export async function executeWithResolution(resolution, { systemPrompt, context,
 
   for (let i = 0; i < orderedCandidates.length; i++) {
     const { providerName, modelId } = orderedCandidates[i];
-    const provider = PROVIDER_MAP[providerName];
+    const provider = await loadProvider(providerName);
     if (!provider) continue;
 
     health[providerName].retryCount = i;
