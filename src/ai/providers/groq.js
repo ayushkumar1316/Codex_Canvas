@@ -1,4 +1,5 @@
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
+const FETCH_TIMEOUT_MS = 90_000;
 
 function truncatePrompt(prompt, maxChars = 12000) {
   if (prompt.length <= maxChars) return prompt;
@@ -46,6 +47,7 @@ export const groqProvider = {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
 
     const result = await response.json();
@@ -65,7 +67,25 @@ export const groqProvider = {
     cleaned = cleaned.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "");
     cleaned = cleaned.trim();
 
-    return JSON.parse(cleaned);
+    console.log("[Groq] Raw response length:", responseBody.length);
+    console.log("[Groq] Cleaned response (first 500):", cleaned.substring(0, 500));
+
+    let parsed;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch (parseErr) {
+      console.error("[Groq] JSON parse error:", parseErr.message);
+      console.error("[Groq] Raw string that failed:", cleaned.substring(0, 300));
+      throw new Error(`Failed to parse AI response as JSON: ${parseErr.message}`);
+    }
+
+    const opCount = parsed?.operations?.length ?? (Array.isArray(parsed) ? parsed.length : 0);
+    console.log("[Groq] Parsed operations count:", opCount, "version:", parsed?.version, "type:", parsed?.type);
+    if (opCount > 0) {
+      console.log("[Groq] First operation:", JSON.stringify(parsed.operations?.[0] ?? parsed[0], null, 2));
+    }
+
+    return parsed;
   },
 };
 

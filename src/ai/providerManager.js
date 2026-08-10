@@ -396,7 +396,8 @@ export function getFriendlyErrorMessage(error, providerName) {
   }
 
   if (type === "validation") {
-    return "AI response could not be applied. The response format was invalid.";
+    const detail = msg || "The response format was invalid.";
+    return `AI response could not be applied. ${detail}`;
   }
 
   if (msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED")) {

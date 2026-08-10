@@ -2,8 +2,10 @@ import { getComponentByType } from "@/registry/componentRegistry";
 import { useAppStore } from "@/store/useAppStore";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
+const MAX_RENDER_DEPTH = 20;
+
 function renderNode(node, selectedComponentId, newIds, reduced, depth) {
-  if (!node) {
+  if (!node || depth > MAX_RENDER_DEPTH) {
     return null;
   }
 
@@ -54,7 +56,7 @@ function renderNode(node, selectedComponentId, newIds, reduced, depth) {
 
   if (isNew && !reduced) {
     return (
-      <div style={wrapperStyle}>
+      <div key={node.id} style={wrapperStyle}>
         <Component key={node.id} node={componentNode}>
           {children}
         </Component>

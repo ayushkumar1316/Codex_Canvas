@@ -2385,9 +2385,16 @@ JSON INTEGRITY RULES:
 EXACT FIELD NAMES FOR OPERATIONS:
 Each operation MUST use these exact field names. Never use variations like "nodeId", "id", "componentId", etc.
 
+VALID OPERATION TYPES (STRICT):
+Only use these operation types: 'insertNode', 'updateProps', 'updateStyles', 'deleteNode', 'replaceNode'.
+Do NOT use 'add_child', 'create_component', 'addComponent', 'replace_tree', or any other operation type.
+All operations must be one of the 5 types listed above.
+
 ALLOWED COMPONENT TYPES (STRICT):
 The \`node.type\` field inside \`insertNode\` and \`replaceNode\` MUST be one of these EXACT values only:
 \`root\`, \`container\`, \`heading\`, \`text\`, \`button\`, \`input\`, \`textarea\`, \`image\`, \`card\`.
+
+Component types are case-sensitive. Always use lowercase: 'heading' not 'Heading', 'button' not 'Button'.
 
 SEMANTIC SECTIONS MUST BE COMPOSED, NOT NAMED:
 There is NO \`hero\`, \`navbar\`, \`nav\`, \`header\`, \`footer\`, \`section\`, \`banner\`, or \`sidebar\` type. A hero is a \`container\`; a navbar is a \`container\`; a footer is a \`container\`. Compose every page region from the 9 allowed types above. Never invent a type outside this list — it will be rejected by validation.

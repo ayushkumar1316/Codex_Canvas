@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ArrowUp,
   ChevronDown,
@@ -19,6 +19,12 @@ import AIStatus from "./AIStatus";
 import ImageAttachment from "./ImageAttachment";
 import ProviderSelector from "./ProviderSelector";
 
+function computeCanvasState(componentTree) {
+  if (!componentTree) return "EMPTY";
+  const hasChildren = (componentTree.children?.length ?? 0) > 0;
+  return hasChildren ? "COMPLETE" : "PARTIAL";
+}
+
 export default function AIPill() {
   const editorMode = useAppStore((state) => state.editorMode);
   const selectedComponentId = useAppStore(
@@ -31,15 +37,18 @@ export default function AIPill() {
   const prompt = useAppStore((state) => state.aiPrompt);
   const setAIPrompt = useAppStore((state) => state.setAIPrompt);
   const aiPhase = useAppStore((state) => state.aiPhase);
+  const aiProvider = useAppStore((state) => state.aiProvider);
 
   const [sendFlash, setSendFlash] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const reduced = useReducedMotion();
+  const usedVoiceSinceLastClear = useRef(false);
 
   const isPreview = editorMode === "preview";
 
   const handleVoiceResult = useCallback(
     (transcript) => {
+      usedVoiceSinceLastClear.current = true;
       const prev = useAppStore.getState().aiPrompt;
       const trimmed = prev.trim();
       setAIPrompt(trimmed ? `${trimmed} ${transcript}` : transcript);
@@ -79,6 +88,9 @@ export default function AIPill() {
       setTimeout(() => setSendFlash(false), 300);
     }
 
+    const usedVoice = usedVoiceSinceLastClear.current;
+    usedVoiceSinceLastClear.current = false;
+
     submitAICommand({
       prompt,
       scope: selectedComponentId ? "component" : "page",
@@ -87,6 +99,9 @@ export default function AIPill() {
       registry: Object.keys(componentRegistry),
       timestamp: new Date().toISOString(),
       editorMode,
+      aiProvider: aiProvider || "auto",
+      hasVoice: usedVoice,
+      canvasState: computeCanvasState(componentTree),
       referenceImage: image
         ? { name: image.name, type: image.type, size: image.size, preview: image.preview }
         : null,

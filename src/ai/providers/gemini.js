@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const MODEL_NAME = import.meta.env.VITE_GEMINI_MODEL || "gemini-3.6-flash";
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 2000;
+const FETCH_TIMEOUT_MS = 90_000;
 
 function stripMarkdownFences(text) {
   let cleaned = text.trim();
@@ -56,7 +57,13 @@ export const geminiProvider = {
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
         const requestPayload = userContent.length === 1 ? userContent[0] : userContent;
-        const result = await model.generateContent(requestPayload);
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Gemini request timed out")), FETCH_TIMEOUT_MS)
+        );
+        const result = await Promise.race([
+          model.generateContent(requestPayload),
+          timeoutPromise,
+        ]);
         const response = result.response;
         const text = response.text();
 
@@ -66,13 +73,24 @@ export const geminiProvider = {
 
         const cleaned = stripMarkdownFences(text);
 
+        console.log("[Gemini] Raw response length:", text.length);
+        console.log("[Gemini] Cleaned response (first 500):", cleaned.substring(0, 500));
+
         let parsed;
         try {
           parsed = JSON.parse(cleaned);
-        } catch {
+        } catch (parseErr) {
+          console.error("[Gemini] JSON parse error:", parseErr.message);
+          console.error("[Gemini] Raw string that failed:", cleaned.substring(0, 300));
           throw new Error(
             `Failed to parse Gemini response as JSON. Response starts with: ${cleaned.substring(0, 100)}...`
           );
+        }
+
+        const opCount = parsed?.operations?.length ?? (Array.isArray(parsed) ? parsed.length : 0);
+        console.log("[Gemini] Parsed operations count:", opCount, "version:", parsed?.version, "type:", parsed?.type);
+        if (opCount > 0) {
+          console.log("[Gemini] First operation:", JSON.stringify(parsed.operations?.[0] ?? parsed[0], null, 2));
         }
 
         return parsed;

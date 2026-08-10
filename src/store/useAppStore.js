@@ -185,6 +185,20 @@ function saveCanvasById(state) {
 
 const historyEngine = createHistoryEngine();
 
+function countTreeChildren(node) {
+  if (!node) return 0;
+  let count = 0;
+  const stack = [node];
+  while (stack.length) {
+    const n = stack.pop();
+    for (const c of n.children ?? []) {
+      count++;
+      stack.push(c);
+    }
+  }
+  return count;
+}
+
 export const useAppStore = create(
   persist(
     immer((set, get) => ({
@@ -194,6 +208,7 @@ export const useAppStore = create(
       editorMode: "editor",
       selectedComponentId: null,
       componentTree: cloneInitialTree(),
+      _lastSubmitCommand: null,
 
       aiLoading: false,
       aiError: null,
@@ -396,13 +411,14 @@ export const useAppStore = create(
       deleteComponent: (id) => {
         if (!id || id === "root") return;
 
+        const parent = findParentNode(get().componentTree, id);
+
         historyEngine.flushPendingSnapshot();
         historyEngine.pushSnapshot(get().componentTree, "delete-component");
 
         set((state) => {
           const wasDeleted = removeComponentNode(state.componentTree, id);
           if (wasDeleted) {
-            const parent = findParentNode(state.componentTree, id);
             state.selectedComponentId = parent?.id ?? null;
             state.canUndo = historyEngine.canUndo();
             state.canRedo = historyEngine.canRedo();
@@ -569,6 +585,20 @@ export const useAppStore = create(
       submitAICommand: async (command) => {
         if (get().aiLoading) return;
 
+        set((state) => {
+          state._lastSubmitCommand = {
+            timestamp: Date.now(),
+            prompt: command.prompt,
+            componentTree: command.componentTree
+              ? JSON.parse(JSON.stringify(command.componentTree))
+              : null,
+            componentTreeChildCount: command.componentTree
+              ? countTreeChildren(command.componentTree)
+              : 0,
+            canvasState: command.canvasState,
+          };
+        });
+
         const originCanvasId = get().activeCanvasId;
 
         historyEngine.flushPendingSnapshot();
@@ -591,7 +621,7 @@ export const useAppStore = create(
         try {
           const result = await executeAICommand(command);
 
-          if (result.success) {
+          if (result.success && result.componentTree) {
             set((state) => {
               state.aiPhase = "success";
               state.aiLoading = false;
@@ -626,7 +656,7 @@ export const useAppStore = create(
           } else {
             set((state) => {
               state.aiLoading = false;
-              state.aiError = result.error;
+              state.aiError = result.error ?? { type: "empty", message: "AI returned empty component tree" };
               state.aiPhase = "error";
             });
           }
@@ -656,3 +686,26 @@ export const useAppStore = create(
     }
   )
 );
+
+if (import.meta.env.DEV) {
+  window.__zustandStore = useAppStore;
+  window.__debugStore = () => {
+    const s = useAppStore.getState();
+    const activeCanvas = s.canvases.find((c) => c.id === s.activeCanvasId);
+    return {
+      componentTree: s.componentTree,
+      componentTreeChildCount: countTreeChildren(s.componentTree),
+      componentTreeRootId: s.componentTree?.id ?? null,
+      activeCanvasId: s.activeCanvasId,
+      canvasesCount: s.canvases.length,
+      canvasTreeChildCount: activeCanvas
+        ? countTreeChildren(activeCanvas.componentTree)
+        : null,
+      canvasTreeRootId: activeCanvas?.componentTree?.id ?? null,
+      aiPhase: s.aiPhase,
+      aiLoading: s.aiLoading,
+      aiError: s.aiError,
+      lastSubmitCommand: s._lastSubmitCommand,
+    };
+  };
+}

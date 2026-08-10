@@ -35,6 +35,7 @@ export const INTENT_PATTERNS = {
       "update hero", "update button", "update text",
       "fix spacing", "fix alignment", "fix layout",
       "make it", "make this", "make them",
+      "make the", "make all", "make these",
     ],
     weight: 2,
   },

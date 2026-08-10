@@ -21,6 +21,10 @@ const PROMPT_TYPE_RULES = [
       "edit", "change", "modify", "update", "replace", "rename", "revise",
       "alter", "adjust", "correct", "fix", "tweak",
     ],
+    phrases: [
+      "make the", "make all", "make these",
+      "make it", "make this", "make them",
+    ],
     weight: 2,
   },
   {
@@ -200,6 +204,13 @@ export function detectPromptType(prompt) {
   const scores = {};
 
   for (const rule of PROMPT_TYPE_RULES) {
+    if (rule.phrases) {
+      for (const phrase of rule.phrases) {
+        if (lower.includes(phrase)) {
+          scores[rule.type] = (scores[rule.type] || 0) + rule.weight * 2;
+        }
+      }
+    }
     for (const keyword of rule.keywords) {
       if (lower.includes(keyword)) {
         scores[rule.type] = (scores[rule.type] || 0) + rule.weight;

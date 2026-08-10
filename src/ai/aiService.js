@@ -4,7 +4,7 @@ import { buildContext } from "./contextBuilder";
 import aiPatchSchema from "./patchSchema";
 import { executeWithFallback, executeWithResolution } from "./providerManager";
 import { optimizeImage } from "@/utils/imageOptimizer";
-import { applyJsonPatch } from "@/utils/jsonPatch";
+import { applyJsonPatchWithDiagnostics } from "@/utils/jsonPatch";
 import { completionPass } from "@/utils/completionPass";
 import { componentRegistry } from "@/registry/componentRegistry";
 import { optimizePrompt } from "./optimizer";
@@ -203,15 +203,11 @@ export async function executeAICommand(command) {
     }
     devTimeEnd("Provider Selection + API Call");
 
-    devLog("Provider Selected", {
+    devLog("Provider Response Received", {
       provider: fallbackResult.provider,
       success: fallbackResult.success,
-      responseType: typeof fallbackResult.response,
-      hasVersion: !!fallbackResult.response?.version,
-      hasOperations: !!fallbackResult.response?.operations,
-      operationCount: fallbackResult.response?.operations?.length || 0,
-      responseKeys: fallbackResult.response ? Object.keys(fallbackResult.response) : [],
-      firstOpType: fallbackResult.response?.operations?.[0]?.type || "none",
+      responseKeys: fallbackResult.response ? Object.keys(fallbackResult.response) : null,
+      operationsCount: fallbackResult.response?.operations?.length ?? (Array.isArray(fallbackResult.response) ? fallbackResult.response.length : 0),
     });
 
     if (!fallbackResult.success) {
@@ -235,28 +231,25 @@ export async function executeAICommand(command) {
     );
     devTimeEnd("Validation + Repair");
 
-    if (IS_DEV) {
-      console.log("[Pipeline] runRepairPipeline() returned:", JSON.parse(JSON.stringify(pipelineResult)));
-      console.log("[Pipeline] pipelineResult keys:", Object.keys(pipelineResult));
-      console.log("[Pipeline] repair diagnostics:", {
-        repaired: pipelineResult.repaired || false,
-        repairLevel: pipelineResult.repairLevel || null,
-        repairedFields: pipelineResult.repairedFields || [],
-        warnings: (pipelineResult.warnings || []).length,
-      });
-    }
-
     if (!pipelineResult.success) {
-      const errSummary = (pipelineResult.errors || []).map((e) => `[${e.severity||"?"}] ${e.code||"?"}: ${e.message||""} @ ${e.path||""}`).join("\n");
-      console.error("[Pipeline] Repair FAILED — all errors:\n" + errSummary);
+      const friendlyErrors = (pipelineResult.errors || []).map((err) => {
+        if (err.kind === "patch-target-missing") return `Target not found: ${err.message}`;
+        if (err.kind === "patch-parent-missing") return `Parent not found: ${err.message}`;
+        if (err.kind === "response-extra-key") return `Unexpected field: ${err.message}`;
+        if (err.kind === "op-type-unsupported") return `Unknown operation: ${err.message}`;
+        if (err.kind === "node-type-unsupported") return `Unknown component type: ${err.message}`;
+        if (err.kind === "registry-type-unregistered") return `Unregistered type: ${err.message}`;
+        if (err.kind === "patch-cannot-delete-root") return `Cannot delete root`;
+        if (err.kind === "patch-duplicate-update") return `Duplicate update: ${err.message}`;
+        if (err.kind === "INVALID_JSON") return `Invalid JSON from AI`;
+        return err.message || err.kind || "Unknown error";
+      });
       return {
         success: false,
         componentTree: null,
         error: {
           type: "validation",
-          message: (pipelineResult.errors || [])
-            .map((err) => `[${err.code}] ${err.message}`)
-            .join("\n") || "AI response failed validation and repair",
+          message: friendlyErrors.join(" | ") || "AI response failed validation and repair",
         },
       };
     }
@@ -264,33 +257,63 @@ export async function executeAICommand(command) {
     const validation = validateResponse(pipelineResult.patchedResponse, {
       componentTree: command.componentTree,
       registry: command.registry ?? command.context?.registry ?? DEFAULT_REGISTRY,
+      strategy: strategy.strategy,
     });
 
-    if (IS_DEV) {
-      console.log("[Pipeline] final strict validateResponse() result:", JSON.parse(JSON.stringify(validation)));
-    }
-
     if (!validation.success) {
-      devLog("Final Validation Failed (invariant)", { errors: validation.errors });
+      const friendlyErrors = validation.errors.map((err) => {
+        if (err.kind === "patch-target-missing") return `Target not found: ${err.message}`;
+        if (err.kind === "patch-parent-missing") return `Parent not found: ${err.message}`;
+        if (err.kind === "response-extra-key") return `Unexpected field: ${err.message}`;
+        if (err.kind === "op-type-unsupported") return `Unknown operation: ${err.message}`;
+        if (err.kind === "node-type-unsupported") return `Unknown component type: ${err.message}`;
+        if (err.kind === "registry-type-unregistered") return `Unregistered type: ${err.message}`;
+        if (err.kind === "patch-cannot-delete-root") return `Cannot delete root`;
+        if (err.kind === "patch-duplicate-update") return `Duplicate update: ${err.message}`;
+        return err.message || err.kind || "Unknown error";
+      });
       return {
         success: false,
         componentTree: null,
         error: {
           type: "validation",
-          message: validation.errors
-            .map((err) => `[${err.code}] ${err.message}`)
-            .join("\n") || "Response format was invalid",
+          message: friendlyErrors.join(" | ") || "Response format was invalid",
         },
       };
     }
 
     devTime("Completion Pass");
-    const patchForCompletion = applyJsonPatch(command.componentTree, validation.patch);
+    const patchDiagnostics = applyJsonPatchWithDiagnostics(command.componentTree, validation.patch);
+    const patchForCompletion = patchDiagnostics.tree;
     if (IS_DEV) {
+      console.log("[Pipeline] patchDiagnostics:", {
+        total: patchDiagnostics.total,
+        applied: patchDiagnostics.applied,
+        skippedCount: patchDiagnostics.skipped.length,
+        skipped: patchDiagnostics.skipped,
+      });
       console.log("[Pipeline] completionPass() input:", JSON.parse(JSON.stringify(patchForCompletion)));
     }
     const updatedComponentTree = completionPass(patchForCompletion);
     devTimeEnd("Completion Pass");
+
+    const isFullGeneration = strategy.strategy === "FULL_GENERATION";
+    const hasOperations = validation.patch.operations.length > 0;
+    const allSkipped = patchDiagnostics.applied === 0 && hasOperations;
+    const isEmptyTree = !updatedComponentTree?.children || updatedComponentTree.children.length === 0;
+
+    if (allSkipped || (isFullGeneration && hasOperations && isEmptyTree)) {
+      return {
+        success: false,
+        componentTree: null,
+        error: {
+          type: "patch-application",
+          message: `Patch application failed: ${patchDiagnostics.skipped.length} of ${patchDiagnostics.total} operations could not be applied. ${
+            patchDiagnostics.skipped[0]?.reason || "Operations targeted non-existent nodes."
+          }`,
+        },
+      };
+    }
 
     devLog("Completion Finished", {
       components: Object.keys(updatedComponentTree).length,

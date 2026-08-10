@@ -116,6 +116,67 @@ function applyOperation(tree, operation) {
   }
 }
 
+function applyOperationTracked(tree, operation, index, diagnostics) {
+  console.log(`[JsonPatch] Applying operation ${index}:`, {
+    type: operation.type,
+    targetId: operation.targetId,
+    parentId: operation.parentId,
+    nodeType: operation.node?.type,
+    nodeId: operation.node?.id,
+  });
+  const before = tree;
+  const result = applyOperation(tree, operation);
+  const changed = result !== before;
+
+  if (!changed) {
+    console.log(`[JsonPatch] Operation ${index} skipped - target/parent not found`);
+    diagnostics.skipped.push({
+      index,
+      operation: {
+        type: operation.type,
+        targetId: operation.targetId,
+        parentId: operation.parentId,
+      },
+      reason:
+        operation.type === "insertNode"
+          ? `parentId "${operation.parentId}" not found in tree`
+          : `targetId "${operation.targetId}" not found in tree`,
+    });
+  } else {
+    console.log(`[JsonPatch] Operation ${index} applied successfully`);
+  }
+
+  return result;
+}
+
+export function applyJsonPatchWithDiagnostics(tree, patch) {
+  console.log("[JsonPatch] Starting patch application with", patch.operations.length, "operations");
+  const diagnostics = {
+    total: patch.operations.length,
+    applied: 0,
+    skipped: [],
+    tree: null,
+  };
+
+  let current = tree;
+  for (let i = 0; i < patch.operations.length; i++) {
+    const before = current;
+    current = applyOperationTracked(current, patch.operations[i], i, diagnostics);
+    if (current !== before) {
+      diagnostics.applied++;
+    }
+  }
+
+  console.log("[JsonPatch] Patch application complete:", {
+    total: diagnostics.total,
+    applied: diagnostics.applied,
+    skippedCount: diagnostics.skipped.length,
+  });
+
+  diagnostics.tree = current;
+  return diagnostics;
+}
+
 export function applyJsonPatch(tree, patch) {
   return patch.operations.reduce(applyOperation, tree);
 }

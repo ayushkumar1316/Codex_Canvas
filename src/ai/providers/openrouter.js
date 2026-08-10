@@ -1,8 +1,22 @@
+import { modelCatalog } from "../models/modelCatalog";
+
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+const DEFAULT_MAX_OUTPUT_TOKENS = 4096;
+const FETCH_TIMEOUT_MS = 90_000;
+const IS_DEV = import.meta.env.DEV;
 
 function truncatePrompt(prompt, maxChars = 10000) {
   if (prompt.length <= maxChars) return prompt;
   return prompt.slice(0, maxChars) + "\n\n[Truncated to fit token budget]";
+}
+
+function getOutputTokenBudget(modelId) {
+  if (!modelId) return DEFAULT_MAX_OUTPUT_TOKENS;
+  const catalogEntry = modelCatalog.find((m) => m.id === modelId);
+  if (catalogEntry?.maxOutputTokens) {
+    return catalogEntry.maxOutputTokens;
+  }
+  return DEFAULT_MAX_OUTPUT_TOKENS;
 }
 
 export const openRouterProvider = {
@@ -26,6 +40,7 @@ export const openRouterProvider = {
     }
 
     const modelId = resolvedModel || import.meta.env.VITE_OPENROUTER_MODEL || "nvidia/nemotron-3-ultra-550b-a55b:free";
+    const maxOutputTokens = getOutputTokenBudget(modelId);
 
     const response = await fetch(OPENROUTER_API_URL, {
       method: "POST",
@@ -48,8 +63,9 @@ export const openRouterProvider = {
           },
         ],
         response_format: { type: "json_object" },
-        max_tokens: 2048,
+        max_tokens: maxOutputTokens,
       }),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
 
     const result = await response.json();
@@ -65,11 +81,36 @@ export const openRouterProvider = {
       throw new Error("No content in API response");
     }
 
+    const finishReason = result?.choices?.[0]?.finish_reason;
+    if (finishReason === "length" && IS_DEV) {
+      console.warn(
+        `[OpenRouter] Response truncated (finish_reason=length). Model: ${modelId}, budget: ${maxOutputTokens} tokens.`
+      );
+    }
+
     let cleaned = responseBody.trim();
     cleaned = cleaned.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "");
     cleaned = cleaned.trim();
 
-    return JSON.parse(cleaned);
+    console.log("[OpenRouter] Raw response length:", responseBody.length);
+    console.log("[OpenRouter] Cleaned response (first 500):", cleaned.substring(0, 500));
+
+    let parsed;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch (parseErr) {
+      console.error("[OpenRouter] JSON parse error:", parseErr.message);
+      console.error("[OpenRouter] Raw string that failed:", cleaned.substring(0, 300));
+      throw new Error(`Failed to parse AI response as JSON: ${parseErr.message}`);
+    }
+
+    const opCount = parsed?.operations?.length ?? (Array.isArray(parsed) ? parsed.length : 0);
+    console.log("[OpenRouter] Parsed operations count:", opCount, "version:", parsed?.version, "type:", parsed?.type);
+    if (opCount > 0) {
+      console.log("[OpenRouter] First operation:", JSON.stringify(parsed.operations?.[0] ?? parsed[0], null, 2));
+    }
+
+    return parsed;
   },
 };
 

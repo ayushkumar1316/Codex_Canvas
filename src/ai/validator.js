@@ -10,6 +10,65 @@ const supportedComponentTypes = new Set(
   aiPatchSchema.schema.$defs.componentNode.properties.type.enum
 );
 
+const COMPONENT_TYPE_ALIASES = {
+  title: "heading",
+  h1: "heading",
+  h2: "heading",
+  h3: "heading",
+  header: "heading",
+  subtitle: "text",
+  description: "text",
+  body: "text",
+  content: "text",
+  paragraph: "text",
+  label: "text",
+  span: "text",
+  p: "text",
+  btn: "button",
+  cta: "button",
+  action: "button",
+  link: "button",
+  anchor: "button",
+  img: "image",
+  picture: "image",
+  svg: "image",
+  textarea: "input",
+  field: "input",
+  formField: "input",
+  panel: "card",
+  tile: "card",
+  box: "card",
+  feature: "card",
+  div: "container",
+  section: "container",
+  hero: "container",
+  navbar: "container",
+  nav: "container",
+  navigation: "container",
+  footer: "container",
+  wrapper: "container",
+  layout: "container",
+  flex: "container",
+  grid: "container",
+  list: "container",
+  form: "container",
+  table: "container",
+  row: "container",
+  col: "container",
+  h4: "heading",
+  h5: "heading",
+  h6: "heading",
+};
+
+function normalizeComponentType(type) {
+  if (!type || typeof type !== "string") return "container";
+  if (supportedComponentTypes.has(type)) return type;
+  const lower = String(type).toLowerCase();
+  if (supportedComponentTypes.has(lower)) return lower;
+  if (COMPONENT_TYPE_ALIASES[lower]) return COMPONENT_TYPE_ALIASES[lower];
+  return "container";
+}
+
 export const ValidationErrorCode = Object.freeze({
   SCHEMA: "VALIDATION_SCHEMA_ERROR",
   BUSINESS: "VALIDATION_BUSINESS_ERROR",
@@ -399,7 +458,10 @@ function getRegistryTypes(registry) {
   if (Array.isArray(registry)) {
     return new Set(registry);
   }
-  return new Set(Object.keys(registry ?? {}));
+  if (registry && typeof registry === "object") {
+    return new Set(Object.keys(registry));
+  }
+  return new Set();
 }
 
 function validateRegistryNode(node, registryTypes, path, errors) {
@@ -492,8 +554,9 @@ function hasDuplicateProperties(operation, updatedProperties) {
   });
 }
 
-export function validatePatch(patch, componentTree) {
+export function validatePatch(patch, componentTree, strategy) {
   const errors = [];
+  const isFullGeneration = strategy === "FULL_GENERATION";
 
   if (!componentTree) {
     return [
@@ -571,16 +634,32 @@ export function validatePatch(patch, componentTree) {
     }
 
     if (operation.type === "insertNode") {
-      if (!nodeIndex.has(operation.parentId)) {
-        errors.push(
-          createError(
-            ValidationErrorCode.PATCH,
-            ValidationErrorKind.PATCH_PARENT_MISSING,
-            `${path}.parentId "${operation.parentId}" does not exist.`,
-            `${path}.parentId`
-          )
-        );
-        continue;
+      const parentId = operation.parentId;
+      const parentExistsInTree = nodeIndex.has(parentId);
+      const parentIsRoot = parentId === componentTree.id || parentId === "root";
+
+      if (!parentExistsInTree && !parentIsRoot) {
+        if (isFullGeneration) {
+          errors.push(
+            createError(
+              ValidationErrorCode.PATCH,
+              ValidationErrorKind.PATCH_PARENT_MISSING,
+              `${path}.parentId "${parentId}" does not exist in the component tree or earlier operations.`,
+              `${path}.parentId`
+            )
+          );
+          continue;
+        } else {
+          errors.push(
+            createError(
+              ValidationErrorCode.PATCH,
+              ValidationErrorKind.PATCH_PARENT_MISSING,
+              `${path}.parentId "${parentId}" does not exist.`,
+              `${path}.parentId`
+            )
+          );
+          continue;
+        }
       }
 
       const insertedNodes = new Map();
@@ -717,32 +796,130 @@ function normalizeNode(node) {
   if (!node || typeof node !== "object") return node;
   return {
     id: String(node.id || `node-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`),
-    type: node.type,
+    type: normalizeComponentType(node.type),
     props: isObject(node.props) ? node.props : {},
     styles: isObject(node.styles) ? node.styles : {},
     children: Array.isArray(node.children) ? node.children.map(normalizeNode) : [],
   };
 }
 
+function convertJsonPatchOpFields(op) {
+  if (typeof op.path !== "string" || op.path === "") return op;
+  if (!("value" in op) && op.op !== "remove") return op;
+
+  const segments = op.path.split("/").filter(Boolean);
+  let childIndex = null;
+  let propType = null;
+  let propKey = null;
+  const childIndices = [];
+
+  for (let i = 0; i < segments.length; i++) {
+    if (segments[i] === "children" && i + 1 < segments.length && /^\d+$/.test(segments[i + 1])) {
+      childIndices.push(parseInt(segments[i + 1], 10));
+      i++;
+    } else if (segments[i] === "styles" && i + 1 < segments.length) {
+      propType = "styles";
+      propKey = segments[i + 1];
+      break;
+    } else if (segments[i] === "props" && i + 1 < segments.length) {
+      propType = "props";
+      propKey = segments[i + 1];
+      break;
+    }
+  }
+
+  if (childIndices.length > 0) {
+    childIndex = childIndices[childIndices.length - 1];
+  }
+
+  const result = { ...op };
+  delete result.path;
+
+  if (childIndex !== null && !result.targetId) {
+    result.targetId = `node-${childIndex}`;
+  }
+
+  if (propType && propKey && "value" in result) {
+    if (propType === "styles") {
+      result.type = "updateStyles";
+      result.styles = { [propKey]: result.value };
+      delete result.value;
+    } else {
+      result.type = "updateProps";
+      result.props = { [propKey]: result.value };
+      delete result.value;
+    }
+  } else if (result.op === "remove" || result.type === "remove" || result.type === "deleteNode") {
+    result.type = "deleteNode";
+  }
+
+  if (result.op) {
+    delete result.op;
+  }
+
+  return result;
+}
+
 function normalizeOperation(op) {
   const normalized = { ...op };
+
+  if (typeof normalized.nodeId === "string" && !normalized.targetId) {
+    normalized.targetId = normalized.nodeId;
+    delete normalized.nodeId;
+  }
+
+  if (typeof normalized.operation === "string" && !normalized.type) {
+    normalized.type = normalized.operation;
+    delete normalized.operation;
+  }
 
   if (!normalized.type && normalized.op) {
     normalized.type = normalized.op;
     delete normalized.op;
   }
 
+  if (normalized.component && !normalized.node && (normalized.type === "insertNode" || normalized.type === "replaceNode")) {
+    normalized.node = normalized.component;
+    delete normalized.component;
+  }
+
+  if (typeof normalized.path === "string" && normalized.path.includes("/")) {
+    Object.assign(normalized, convertJsonPatchOpFields(normalized));
+  }
+
   const typeMap = {
     removeNode: "deleteNode",
     addNode: "insertNode",
     addChild: "insertNode",
+    add_child: "insertNode",
+    child: "insertNode",
     add: "insertNode",
     create: "insertNode",
+    create_component: "insertNode",
+    addComponent: "insertNode",
+    component: "insertNode",
     update: "updateProps",
     modify: "updateStyles",
     replace: "replaceNode",
     delete: "deleteNode",
     remove: "deleteNode",
+    style: "updateStyles",
+    change: "updateStyles",
+    set: "updateProps",
+    edit: "updateProps",
+    updateStyle: "updateStyles",
+    updateStyles: "updateStyles",
+    updateProp: "updateProps",
+    updateProps: "updateProps",
+    changeStyle: "updateStyles",
+    changeStyles: "updateStyles",
+    setStyle: "updateStyles",
+    setStyles: "updateStyles",
+    insert: "insertNode",
+    destroy: "deleteNode",
+    patch: "replaceNode",
+    replace_tree: "replaceNode",
+    replaceTree: "replaceNode",
   };
 
   if (typeMap[normalized.type]) {
@@ -812,9 +989,42 @@ function normalizeOperation(op) {
   return normalized;
 }
 
+function looksLikeFlatOperation(obj) {
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return false;
+  const hasOp = typeof obj.operation === "string" || typeof obj.type === "string";
+  const hasContent = isObject(obj.styles) || isObject(obj.props) || obj.node || obj.component;
+  const hasId = typeof obj.nodeId === "string" || typeof obj.targetId === "string" || typeof obj.id === "string" || typeof obj.target === "string";
+  const noOpsArray = !Array.isArray(obj.operations);
+  return hasOp && hasContent && noOpsArray;
+}
+
 function normalizeResponse(response) {
   if (!response || typeof response !== "object") {
     return response;
+  }
+
+  if (Array.isArray(response)) {
+    const ops = response.map(normalizeOperation);
+    return { version: "1.0", operations: ops };
+  }
+
+  if (typeof response.op === "string" && typeof response.path === "string") {
+    return { version: "1.0", operations: [normalizeOperation(response)] };
+  }
+
+  if (Array.isArray(response.operation)) {
+    const ops = response.operation.map(normalizeOperation);
+    return { version: "1.0", operations: ops };
+  }
+
+  if (typeof response.operation === "string" || looksLikeFlatOperation(response)) {
+    return { version: "1.0", operations: [normalizeOperation(response)] };
+  }
+
+  if (typeof response.nodeId === "string" || typeof response.targetId === "string") {
+    if (!Array.isArray(response.operations)) {
+      return { version: "1.0", operations: [normalizeOperation(response)] };
+    }
   }
 
   const normalized = { ...response };
@@ -833,12 +1043,15 @@ function normalizeResponse(response) {
 export function validateResponse(response, { componentTree, registry, strategy } = {}) {
   const normalized = normalizeResponse(response);
 
+  console.log("[Validator] validateResponse - normalized operations:", normalized?.operations?.length, "types:", normalized?.operations?.map(op => op?.type));
+
   const errors = [
     ...validateSchema(normalized),
     ...validateBusinessRules(normalized),
   ];
 
   if (errors.length > 0) {
+    console.log("[Validator] Schema/business errors:", errors.map(e => `${e.kind}: ${e.message}`));
     return {
       success: false,
       patch: null,
@@ -846,11 +1059,21 @@ export function validateResponse(response, { componentTree, registry, strategy }
     };
   }
 
-  errors.push(...validateRegistry(normalized, registry));
-
-  if (strategy !== "FULL_GENERATION") {
-    errors.push(...validatePatch(normalized, componentTree));
+  if (registry) {
+    const registryErrors = validateRegistry(normalized, registry);
+    if (registryErrors.length > 0) {
+      console.log("[Validator] Registry errors:", registryErrors.map(e => `${e.kind}: ${e.message}`));
+    }
+    errors.push(...registryErrors);
   }
+
+  const patchErrors = validatePatch(normalized, componentTree, strategy);
+  if (patchErrors.length > 0) {
+    console.log("[Validator] Patch errors:", patchErrors.map(e => `${e.kind}: ${e.message}`));
+  }
+  errors.push(...patchErrors);
+
+  console.log("[Validator] Final result:", { success: errors.length === 0, errorsCount: errors.length });
 
   return {
     success: errors.length === 0,

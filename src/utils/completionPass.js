@@ -220,6 +220,32 @@ function ensureButtonSize(node) {
   }
 }
 
+function ensureGridContainer(node) {
+  if (!node || typeof node !== "object") return;
+
+  const styles = node.styles ?? {};
+  const children = node.children ?? [];
+
+  if (
+    node.type === "container" &&
+    children.length >= 2 &&
+    children.length <= 6 &&
+    !styles.display &&
+    children.some(c => c.type === "card" || c.type === "container")
+  ) {
+    const newStyles = { ...styles };
+    newStyles.display = "grid";
+    newStyles.gridTemplateColumns = `repeat(${Math.min(children.length, 3)}, 1fr)`;
+    if (!newStyles.gap) newStyles.gap = "24px";
+    if (!newStyles.padding) newStyles.padding = "64px 32px";
+    node.styles = newStyles;
+  }
+
+  for (const child of children) {
+    ensureGridContainer(child);
+  }
+}
+
 export function completionPass(tree) {
   if (!tree || typeof tree !== "object") return tree;
 
@@ -262,6 +288,7 @@ export function completionPass(tree) {
   });
 
   ensureContainerWidth(root);
+  ensureGridContainer(root);
   ensureSectionSpacing(root, 0);
   ensureCardPadding(root);
   ensureRadius(root);

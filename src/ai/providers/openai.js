@@ -1,4 +1,5 @@
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+const FETCH_TIMEOUT_MS = 90_000;
 
 export const openAIProvider = {
   async execute({ systemPrompt, context, userPrompt, schema, model: resolvedModel }) {
@@ -41,6 +42,7 @@ export const openAIProvider = {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
 
     const result = await response.json();

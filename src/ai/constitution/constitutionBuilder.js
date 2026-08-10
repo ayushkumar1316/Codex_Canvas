@@ -11,6 +11,7 @@ const STYLE_KEYWORDS = [
   "modern", "minimal", "luxury", "premium", "glass", "glassmorphism",
   "dark", "light", "colorful", "vibrant", "corporate", "professional",
   "apple", "stripe", "elegant", "sophisticated", "clean", "bold",
+  "tint", "shade", "hue", "palette", "theme",
 ];
 
 const LAYOUT_KEYWORDS = [

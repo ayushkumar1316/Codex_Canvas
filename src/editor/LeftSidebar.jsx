@@ -123,8 +123,8 @@ function ComponentTreeNode({
         }}
       >
         {hasChildren ? (
-          <button
-            type="button"
+          <span
+            role="button"
             onClick={(e) => {
               e.stopPropagation();
               toggleCollapse(node.id);
@@ -137,7 +137,7 @@ function ComponentTreeNode({
                 isCollapsed ? "" : "rotate-90"
               } ${isLast ? "text-zinc-700" : "text-zinc-600"}`}
             />
-          </button>
+          </span>
         ) : (
           <span className="mr-0.5 size-3 shrink-0" />
         )}

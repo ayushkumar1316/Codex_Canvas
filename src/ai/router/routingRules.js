@@ -14,7 +14,9 @@ function scoreIntent(prompt, intentName) {
   }
 
   for (const keyword of pattern.keywords) {
-    if (lower.includes(keyword)) {
+    const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const wordBoundaryRegex = new RegExp(`(?:^|\\s|\\b)${escaped}(?:\\s|\\b|$)`, 'i');
+    if (wordBoundaryRegex.test(lower)) {
       score += pattern.weight;
     }
   }

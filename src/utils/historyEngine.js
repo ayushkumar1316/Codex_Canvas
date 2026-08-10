@@ -8,11 +8,16 @@ export function createHistoryEngine() {
   let pendingSnapshot = null;
 
   function cloneTree(tree) {
-    return JSON.parse(JSON.stringify(tree));
+    try {
+      return JSON.parse(JSON.stringify(tree));
+    } catch (e) {
+      console.error("[historyEngine] cloneTree failed, returning empty tree", e);
+      return { id: "root", type: "root", props: {}, styles: {}, children: [] };
+    }
   }
 
   function canUndo() {
-    return historyStack.length > 0;
+    return historyStack.length > 0 || pendingSnapshot !== null;
   }
 
   function canRedo() {
