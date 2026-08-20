@@ -639,7 +639,45 @@ export async function executeWithResolution(resolution, { systemPrompt, context,
     }
   }
 
-  return executeWithFallback({ systemPrompt, context, userPrompt, schema });
+  const remainingProviders = getOrderedProviders().filter(
+    (name) => !orderedCandidates.some((c) => c.providerName === name)
+  );
+  for (const providerName of remainingProviders) {
+    if (isCooldownActive(providerName)) continue;
+    const provider = await loadProvider(providerName);
+    if (!provider) continue;
+
+    health[providerName].status = "busy";
+    const start = Date.now();
+    try {
+      const response = await provider.execute({ systemPrompt, context, userPrompt, schema });
+      const elapsed = Date.now() - start;
+      recordSuccess(providerName, elapsed);
+      return { success: true, response, provider: providerName, error: null };
+    } catch (error) {
+      recordFailure(providerName, error);
+      if (isFatalError(error)) {
+        return {
+          success: false,
+          error: {
+            type: "provider_error",
+            message: getFriendlyErrorMessage({ type: "provider_error", message: error.message }, providerName),
+            provider: providerName,
+          },
+          provider: providerName,
+        };
+      }
+    }
+  }
+
+  return {
+    success: false,
+    error: {
+      type: "all_providers_failed",
+      message: "All providers failed. Please try again in a moment.",
+    },
+    provider: null,
+  };
 }
 
 export function resetProviderHealth(name) {

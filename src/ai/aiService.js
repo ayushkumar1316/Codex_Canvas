@@ -220,12 +220,14 @@ export async function executeAICommand(command) {
       devLog("Cache Hit", { provider: cachedResponse.provider });
       fallbackResult = cachedResponse;
     } else if (capabilityResult.success && resolved?.primary) {
+      console.log("[Pipeline] executeWithResolution called with primary:", resolved.primary, "fallbacks:", resolved.fallbacks?.length || 0);
       fallbackResult = await executeWithResolution(resolved, {
         systemPrompt: constitution || SYSTEM_PROMPT,
         context,
         userPrompt: effectivePrompt,
         schema: aiPatchSchema,
       });
+      console.log("[Pipeline] executeWithResolution returned:", { success: fallbackResult.success, provider: fallbackResult.provider });
       if (fallbackResult.success) {
         responseCache.set(
           effectivePrompt,
@@ -235,6 +237,7 @@ export async function executeAICommand(command) {
         );
       }
     } else {
+      console.log("[Pipeline] executeWithFallback called (resolution skipped)");
       fallbackResult = await executeWithFallback({
         systemPrompt: constitution || SYSTEM_PROMPT,
         context,
