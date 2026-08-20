@@ -50,9 +50,11 @@ function buildProviderMeta(name) {
   };
 }
 
-const COOLDOWN_MS = 60_000;
-const FAILURE_THRESHOLD = 3;
+const COOLDOWN_MS = 10_000;
+const FAILURE_THRESHOLD = 2;
 const HEALTH_CACHE_TTL = 5 * 60 * 1000;
+const RETRY_BACKOFF_MS = [2000, 5000];
+const MAX_RETRIES_PER_PROVIDER = 2;
 
 const health = {};
 for (const name of PROVIDER_LIST) {
@@ -455,6 +457,28 @@ export function getFriendlyErrorMessage(error, providerName) {
   return "Something went wrong. Please try again.";
 }
 
+function isRateLimitError(error) {
+  const msg = error?.message || "";
+  return (
+    msg.includes("429") ||
+    msg.includes("RESOURCE_EXHAUSTED") ||
+    msg.includes("rate") ||
+    msg.includes("quota") ||
+    msg.includes("too many") ||
+    msg.includes("Rate limit")
+  );
+}
+
+function isTimeoutError(error) {
+  const msg = error?.message || "";
+  return (
+    msg.includes("timeout") ||
+    msg.includes("timed out") ||
+    msg.includes("TIMEOUT") ||
+    msg.includes("abort")
+  );
+}
+
 export async function executeWithFallback({ systemPrompt, context, userPrompt, schema }) {
   const candidates = getAvailableProviders();
   if (candidates.length === 0) {
@@ -486,40 +510,53 @@ export async function executeWithFallback({ systemPrompt, context, userPrompt, s
     health[providerName].retryCount = i;
     health[providerName].status = "busy";
 
-    const start = Date.now();
-    try {
-      const response = await provider.execute({ systemPrompt, context, userPrompt, schema });
-      const elapsed = Date.now() - start;
-      recordSuccess(providerName, elapsed);
-      return { success: true, response, provider: providerName, error: null };
-    } catch (error) {
-      recordFailure(providerName, error);
+    let lastError = null;
+    for (let attempt = 0; attempt <= MAX_RETRIES_PER_PROVIDER; attempt++) {
+      const start = Date.now();
+      try {
+        const response = await provider.execute({ systemPrompt, context, userPrompt, schema });
+        const elapsed = Date.now() - start;
+        recordSuccess(providerName, elapsed);
+        return { success: true, response, provider: providerName, error: null };
+      } catch (error) {
+        lastError = error;
+        recordFailure(providerName, error);
 
-      if (isFatalError(error)) {
-        return {
-          success: false,
-          error: {
-            type: "provider_error",
-            message: getFriendlyErrorMessage({ type: "provider_error", message: error.message }, providerName),
+        if (isFatalError(error)) {
+          return {
+            success: false,
+            error: {
+              type: "provider_error",
+              message: getFriendlyErrorMessage({ type: "provider_error", message: error.message }, providerName),
+              provider: providerName,
+            },
             provider: providerName,
-          },
-          provider: providerName,
-        };
-      }
-
-      if (i < candidates.length - 1) {
-        const nextName = candidates[i + 1];
-        const nextMeta = getProvider(nextName);
-        if (_storeRef) {
-          try {
-            const state = _storeRef.getState();
-            if (state.setAIActiveProvider) {
-              state.setAIActiveProvider(nextName);
-            }
-          } catch { /* noop */ }
+          };
         }
-        console.log(`[ProviderManager] Falling back to ${nextMeta?.displayName || nextName}...`);
+
+        if ((isRateLimitError(error) || isTimeoutError(error)) && attempt < MAX_RETRIES_PER_PROVIDER) {
+          const backoff = RETRY_BACKOFF_MS[attempt] || 5000;
+          console.log(`[ProviderManager] ${providerName} ${isRateLimitError(error) ? 'rate limited' : 'timed out'}, retrying in ${backoff}ms (attempt ${attempt + 1}/${MAX_RETRIES_PER_PROVIDER})...`);
+          await new Promise((r) => setTimeout(r, backoff));
+          continue;
+        }
+
+        break;
       }
+    }
+
+    if (i < candidates.length - 1) {
+      const nextName = candidates[i + 1];
+      const nextMeta = getProvider(nextName);
+      if (_storeRef) {
+        try {
+          const state = _storeRef.getState();
+          if (state.setAIActiveProvider) {
+            state.setAIActiveProvider(nextName);
+          }
+        } catch { /* noop */ }
+      }
+      console.log(`[ProviderManager] Falling back to ${nextMeta?.displayName || nextName}...`);
     }
   }
 
@@ -602,40 +639,51 @@ export async function executeWithResolution(resolution, { systemPrompt, context,
     health[providerName].retryCount = i;
     health[providerName].status = "busy";
 
-    const start = Date.now();
-    try {
-      const response = await provider.execute({ systemPrompt, context, userPrompt, schema, model: modelId });
-      const elapsed = Date.now() - start;
-      recordSuccess(providerName, elapsed);
-      return { success: true, response, provider: providerName, error: null };
-    } catch (error) {
-      recordFailure(providerName, error);
+    for (let attempt = 0; attempt <= MAX_RETRIES_PER_PROVIDER; attempt++) {
+      const start = Date.now();
+      try {
+        const response = await provider.execute({ systemPrompt, context, userPrompt, schema, model: modelId });
+        const elapsed = Date.now() - start;
+        recordSuccess(providerName, elapsed);
+        return { success: true, response, provider: providerName, error: null };
+      } catch (error) {
+        recordFailure(providerName, error);
 
-      if (isFatalError(error)) {
-        return {
-          success: false,
-          error: {
-            type: "provider_error",
-            message: getFriendlyErrorMessage({ type: "provider_error", message: error.message }, providerName),
+        if (isFatalError(error)) {
+          return {
+            success: false,
+            error: {
+              type: "provider_error",
+              message: getFriendlyErrorMessage({ type: "provider_error", message: error.message }, providerName),
+              provider: providerName,
+            },
             provider: providerName,
-          },
-          provider: providerName,
-        };
-      }
-
-      if (i < orderedCandidates.length - 1) {
-        const nextName = orderedCandidates[i + 1].providerName;
-        const nextMeta = getProvider(nextName);
-        if (_storeRef) {
-          try {
-            const state = _storeRef.getState();
-            if (state.setAIActiveProvider) {
-              state.setAIActiveProvider(nextName);
-            }
-          } catch { /* noop */ }
+          };
         }
-        console.log(`[ProviderManager] Resolution fallback: ${nextMeta?.displayName || nextName}...`);
+
+        if ((isRateLimitError(error) || isTimeoutError(error)) && attempt < MAX_RETRIES_PER_PROVIDER) {
+          const backoff = RETRY_BACKOFF_MS[attempt] || 5000;
+          console.log(`[ProviderManager] ${providerName} ${isRateLimitError(error) ? 'rate limited' : 'timed out'}, retrying in ${backoff}ms...`);
+          await new Promise((r) => setTimeout(r, backoff));
+          continue;
+        }
+
+        break;
       }
+    }
+
+    if (i < orderedCandidates.length - 1) {
+      const nextName = orderedCandidates[i + 1].providerName;
+      const nextMeta = getProvider(nextName);
+      if (_storeRef) {
+        try {
+          const state = _storeRef.getState();
+          if (state.setAIActiveProvider) {
+            state.setAIActiveProvider(nextName);
+          }
+        } catch { /* noop */ }
+      }
+      console.log(`[ProviderManager] Resolution fallback: ${nextMeta?.displayName || nextName}...`);
     }
   }
 
@@ -648,24 +696,34 @@ export async function executeWithResolution(resolution, { systemPrompt, context,
     if (!provider) continue;
 
     health[providerName].status = "busy";
-    const start = Date.now();
-    try {
-      const response = await provider.execute({ systemPrompt, context, userPrompt, schema });
-      const elapsed = Date.now() - start;
-      recordSuccess(providerName, elapsed);
-      return { success: true, response, provider: providerName, error: null };
-    } catch (error) {
-      recordFailure(providerName, error);
-      if (isFatalError(error)) {
-        return {
-          success: false,
-          error: {
-            type: "provider_error",
-            message: getFriendlyErrorMessage({ type: "provider_error", message: error.message }, providerName),
+
+    for (let attempt = 0; attempt <= MAX_RETRIES_PER_PROVIDER; attempt++) {
+      const start = Date.now();
+      try {
+        const response = await provider.execute({ systemPrompt, context, userPrompt, schema });
+        const elapsed = Date.now() - start;
+        recordSuccess(providerName, elapsed);
+        return { success: true, response, provider: providerName, error: null };
+      } catch (error) {
+        recordFailure(providerName, error);
+        if (isFatalError(error)) {
+          return {
+            success: false,
+            error: {
+              type: "provider_error",
+              message: getFriendlyErrorMessage({ type: "provider_error", message: error.message }, providerName),
+              provider: providerName,
+            },
             provider: providerName,
-          },
-          provider: providerName,
-        };
+          };
+        }
+        if ((isRateLimitError(error) || isTimeoutError(error)) && attempt < MAX_RETRIES_PER_PROVIDER) {
+          const backoff = RETRY_BACKOFF_MS[attempt] || 5000;
+          console.log(`[ProviderManager] ${providerName} ${isRateLimitError(error) ? 'rate limited' : 'timed out'}, retrying in ${backoff}ms...`);
+          await new Promise((r) => setTimeout(r, backoff));
+          continue;
+        }
+        break;
       }
     }
   }
