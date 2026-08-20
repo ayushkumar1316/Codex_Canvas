@@ -1,7 +1,7 @@
 import { validateResponse, ValidationErrorCode } from "../validator";
 import { repairJSON } from "./jsonRepair";
 import { applyProviderRepairs } from "./repairStrategies";
-import { repairResponse, repairComponentTreeStandalone } from "./repairEngine";
+import { repairResponse, repairComponentTreeStandalone, moveStylePropsFromPropsToStyles } from "./repairEngine";
 
 const MAX_REPAIR_ATTEMPTS = 2;
 
@@ -89,6 +89,7 @@ export function runRepairPipeline(rawResponse, provider, context = {}) {
 
   if (validation.success) {
     console.log("[RepairPipeline] Validation succeeded on first pass");
+    moveStylePropsFromPropsToStyles(validation.patch);
     return {
       success: true,
       repaired: jsonResult?.repaired || false,

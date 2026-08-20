@@ -11,7 +11,7 @@ export default function Layout() {
   const editorMode = useAppStore((state) => state.editorMode);
 
   return (
-    <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-[#0a0a0e]">
+    <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-background transition-colors duration-300 page-enter">
       <Header />
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {editorMode === "editor" && (

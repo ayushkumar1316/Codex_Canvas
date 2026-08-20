@@ -860,11 +860,21 @@ function convertJsonPatchOpFields(op) {
   return result;
 }
 
+function resolveNodeRef(ref) {
+  if (typeof ref === "string") return ref;
+  if (ref && typeof ref === "object") {
+    if (typeof ref.id === "string") return ref.id;
+    if (typeof ref.targetId === "string") return ref.targetId;
+  }
+  return ref;
+}
+
 function normalizeOperation(op) {
+  console.log("[EDIT-TRACE-V2] normalizeOperation INPUT:", { type: op?.type, targetId: op?.targetId, props: op?.props, styles: op?.styles });
   const normalized = { ...op };
 
-  if (typeof normalized.nodeId === "string" && !normalized.targetId) {
-    normalized.targetId = normalized.nodeId;
+  if (normalized.nodeId !== undefined) {
+    normalized.targetId = resolveNodeRef(normalized.nodeId);
     delete normalized.nodeId;
   }
 
@@ -918,12 +928,40 @@ function normalizeOperation(op) {
     insert: "insertNode",
     destroy: "deleteNode",
     patch: "replaceNode",
+    create_component_tree: "replaceNode",
+    createComponentTree: "replaceNode",
     replace_tree: "replaceNode",
     replaceTree: "replaceNode",
+    updateNode: "updateProps",
+    modifyNode: "updateStyles",
+    changeNode: "updateProps",
+    setNode: "updateProps",
   };
 
   if (typeMap[normalized.type]) {
     normalized.type = typeMap[normalized.type];
+  }
+
+  if (normalized.type === "replaceNode") {
+    if (!normalized.node && normalized.tree && typeof normalized.tree === "object") {
+      normalized.node = normalized.tree;
+      delete normalized.tree;
+    }
+    if (!normalized.node && normalized.componentTree && typeof normalized.componentTree === "object") {
+      normalized.node = normalized.componentTree;
+      delete normalized.componentTree;
+    }
+    if (!normalized.node && normalized.component_tree && typeof normalized.component_tree === "object") {
+      normalized.node = normalized.component_tree;
+      delete normalized.component_tree;
+    }
+    if (!normalized.node && normalized.payload && typeof normalized.payload === "object") {
+      normalized.node = normalized.payload;
+      delete normalized.payload;
+    }
+    if (!normalized.targetId && normalized.node && typeof normalized.node === "object" && normalized.node.id) {
+      normalized.targetId = String(normalized.node.id);
+    }
   }
 
   if (normalized.type === "insertNode") {
@@ -933,11 +971,11 @@ function normalizeOperation(op) {
     }
 
     if (normalized.target && !normalized.parentId) {
-      normalized.parentId = normalized.target;
+      normalized.parentId = resolveNodeRef(normalized.target);
       delete normalized.target;
     }
     if (normalized.targetId && !normalized.parentId) {
-      normalized.parentId = normalized.targetId;
+      normalized.parentId = resolveNodeRef(normalized.targetId);
       delete normalized.targetId;
     }
     if (!normalized.position) {
@@ -952,10 +990,10 @@ function normalizeOperation(op) {
   } else {
     if (!normalized.targetId) {
       if (normalized.id && normalized.type !== "insertNode") {
-        normalized.targetId = normalized.id;
+        normalized.targetId = resolveNodeRef(normalized.id);
         delete normalized.id;
       } else if (normalized.target) {
-        normalized.targetId = normalized.target;
+        normalized.targetId = resolveNodeRef(normalized.target);
         delete normalized.target;
       }
     }
@@ -983,9 +1021,11 @@ function normalizeOperation(op) {
         clean[key] = normalized[key];
       }
     }
+    console.log("[EDIT-TRACE-V2] normalizeOperation OUTPUT (clean):", { type: clean?.type, targetId: clean?.targetId, props: clean?.props, styles: clean?.styles });
     return clean;
   }
 
+  console.log("[EDIT-TRACE-V2] normalizeOperation OUTPUT (fallback):", { type: normalized?.type, targetId: normalized?.targetId, props: normalized?.props, styles: normalized?.styles });
   return normalized;
 }
 
@@ -1015,6 +1055,11 @@ function normalizeResponse(response) {
   if (Array.isArray(response.operation)) {
     const ops = response.operation.map(normalizeOperation);
     return { version: "1.0", operations: ops };
+  }
+
+  if (Array.isArray(response.ops) && !Array.isArray(response.operations)) {
+    const ops = response.ops.map(normalizeOperation);
+    return { version: response.version || "1.0", operations: ops };
   }
 
   if (typeof response.operation === "string" || looksLikeFlatOperation(response)) {

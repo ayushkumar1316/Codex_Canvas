@@ -17,6 +17,8 @@ import {
   Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import DevicePreview from "@/components/ui/DevicePreview";
+import ThemeSelector from "@/components/ui/ThemeSelector";
 import { useAppStore } from "@/store/useAppStore";
 import DeleteConfirmationDialog from "@/components/ui/DeleteConfirmationDialog";
 import {
@@ -32,6 +34,10 @@ import {
 export default function Header() {
   const editorMode = useAppStore((state) => state.editorMode);
   const setEditorMode = useAppStore((state) => state.setEditorMode);
+  const previewDevice = useAppStore((state) => state.previewDevice);
+  const setPreviewDevice = useAppStore((state) => state.setPreviewDevice);
+  const theme = useAppStore((state) => state.theme);
+  const setTheme = useAppStore((state) => state.setTheme);
   const createCanvas = useAppStore((state) => state.createCanvas);
   const canvases = useAppStore((state) => state.canvases);
   const activeCanvasId = useAppStore((state) => state.activeCanvasId);
@@ -139,26 +145,31 @@ export default function Header() {
     setShowContextMenu(false);
   };
 
+  const headerBtn = "inline-flex items-center justify-center rounded-lg border border-border-subtle bg-surface-1 p-1.5 text-text-secondary transition-all duration-150 hover:border-border-default hover:bg-surface-2 hover:text-text-primary hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border-subtle disabled:hover:bg-surface-1 disabled:hover:text-text-secondary disabled:hover:scale-100";
+  const headerBtnLabeled = "inline-flex items-center gap-1.5 rounded-lg border border-border-subtle bg-surface-1 px-2.5 py-1.5 text-xs font-medium text-text-secondary transition-all duration-150 hover:border-border-default hover:bg-surface-2 hover:text-text-primary hover:scale-105 active:scale-95";
+  const menuItem = "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-text-primary transition-colors duration-150 hover:bg-hover-surface";
+  const menuDivider = "my-1 h-px bg-border-subtle";
+
   return (
     <>
-      <header className="sticky top-0 z-40 h-14 border-b border-white/[0.05] bg-[#0a0a0e]/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 h-14 border-b border-border-subtle bg-surface-0/90 transition-colors duration-300 dark:panel-glass dark:border-[rgba(139,92,246,0.08)]">
         <div className="mx-auto flex h-full w-full items-center px-4 sm:px-5">
           <div className="flex shrink-0 items-center gap-2.5">
             <a href="/" className="group flex items-center gap-2">
-              <span className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-violet-950/40 transition-transform duration-300 group-hover:scale-105">
+              <span className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-violet-500/20 transition-transform duration-300 group-hover:scale-105">
                 <Layers3 className="size-3.5 text-white" strokeWidth={2.3} />
               </span>
-              <span className="hidden text-[13px] font-semibold tracking-[-0.03em] text-white sm:block">
+              <span className="hidden text-[13px] font-semibold tracking-[-0.03em] text-text-primary sm:block">
                 Codex Canvas
               </span>
             </a>
-            <span className="hidden h-3.5 w-px bg-white/[0.08] sm:block" />
+            <span className="hidden h-3.5 w-px bg-border-subtle sm:block" />
 
-            <span className="rounded-md border border-violet-400/[0.12] bg-violet-400/[0.06] px-2 py-0.5 text-[10px] font-medium text-violet-200">
+            <span className="rounded-md border border-primary/15 bg-primary/5 px-2 py-0.5 text-xs font-medium text-primary">
               {editorMode === "editor" ? "Editor" : "Preview"}
             </span>
 
-            <span className="hidden h-3.5 w-px bg-white/[0.08] sm:block" />
+            <span className="hidden h-3.5 w-px bg-border-subtle sm:block" />
 
             {isEditingName ? (
               <input
@@ -173,14 +184,14 @@ export default function Header() {
                     setIsEditingName(false);
                   }
                 }}
-                className="w-40 border-0 bg-transparent text-[12px] font-medium text-zinc-200 outline-none focus:ring-0"
+                className="w-40 border-0 bg-transparent text-[12px] font-medium text-text-primary outline-none focus:ring-0"
                 autoFocus
               />
             ) : (
               <button
                 type="button"
                 onClick={handleStartRename}
-                className="max-w-[160px] truncate text-[12px] font-medium text-zinc-400 transition-colors hover:text-zinc-200"
+                className="max-w-[160px] truncate text-[12px] font-medium text-text-muted transition-colors hover:text-text-primary"
                 title="Click to rename"
               >
                 {canvasName}
@@ -196,7 +207,7 @@ export default function Header() {
                 type="button"
                 onClick={undo}
                 disabled={!canUndo}
-                className="inline-flex items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] p-1.5 text-zinc-400 transition-all duration-200 hover:border-white/[0.16] hover:bg-white/[0.08] hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-white/[0.08] disabled:hover:bg-white/[0.04] disabled:hover:text-zinc-400"
+                className={headerBtn}
                 title="Undo (Ctrl+Z)"
                 aria-label="Undo"
               >
@@ -206,7 +217,7 @@ export default function Header() {
                 type="button"
                 onClick={redo}
                 disabled={!canRedo}
-                className="inline-flex items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] p-1.5 text-zinc-400 transition-all duration-200 hover:border-white/[0.16] hover:bg-white/[0.08] hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-white/[0.08] disabled:hover:bg-white/[0.04] disabled:hover:text-zinc-400"
+                className={headerBtn}
                 title="Redo (Ctrl+Shift+Z)"
                 aria-label="Redo"
               >
@@ -214,13 +225,13 @@ export default function Header() {
               </button>
             </div>
 
-            <span className="hidden h-3.5 w-px bg-white/[0.08] sm:block" />
+            <span className="hidden h-3.5 w-px bg-border-subtle sm:block" />
 
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setShowExportMenu(!showExportMenu)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2.5 py-1.5 text-[11px] font-medium text-zinc-400 transition-all duration-200 hover:border-white/[0.16] hover:bg-white/[0.08] hover:text-zinc-200"
+                className={headerBtnLabeled}
                 title="Export project"
               >
                 <Download className="size-3.5" />
@@ -232,41 +243,21 @@ export default function Header() {
                     className="fixed inset-0 z-40"
                     onClick={() => setShowExportMenu(false)}
                   />
-                  <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl border border-white/[0.08] bg-[#12121a] p-1 shadow-xl">
-                    <button
-                      type="button"
-                      onClick={handleExportJSON}
-                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 transition-colors hover:bg-white/[0.06]"
-                      aria-label="Export as JSON"
-                    >
+                  <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl border border-border-subtle dark:border-[rgba(139,92,246,0.12)] bg-surface-1 dark:bg-surface-2 p-1 shadow-xl dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+                    <button type="button" onClick={handleExportJSON} className={menuItem} aria-label="Export as JSON">
                       <FileJson className="size-3.5" />
                       Export JSON
                     </button>
-                    <button
-                      type="button"
-                      onClick={handleExportHTML}
-                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 transition-colors hover:bg-white/[0.06]"
-                      aria-label="Export as HTML"
-                    >
+                    <button type="button" onClick={handleExportHTML} className={menuItem} aria-label="Export as HTML">
                       <Globe className="size-3.5" />
                       Export HTML
                     </button>
-                    <button
-                      type="button"
-                      onClick={handleExportReact}
-                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 transition-colors hover:bg-white/[0.06]"
-                      aria-label="Export as React project"
-                    >
+                    <button type="button" onClick={handleExportReact} className={menuItem} aria-label="Export as React project">
                       <FileCode className="size-3.5" />
                       Export React
                     </button>
-                    <div className="my-1 h-px bg-white/[0.05]" />
-                    <button
-                      type="button"
-                      onClick={handleCopyJSON}
-                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 transition-colors hover:bg-white/[0.06]"
-                      aria-label="Copy JSON to clipboard"
-                    >
+                    <div className={menuDivider} />
+                    <button type="button" onClick={handleCopyJSON} className={menuItem} aria-label="Copy JSON to clipboard">
                       <Copy className="size-3.5" />
                       Copy JSON
                     </button>
@@ -278,7 +269,7 @@ export default function Header() {
             <button
               type="button"
               onClick={handleNewCanvas}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2.5 py-1.5 text-[11px] font-medium text-zinc-400 transition-all duration-200 hover:border-white/[0.16] hover:bg-white/[0.08] hover:text-zinc-200"
+              className={headerBtnLabeled}
             >
               <Plus className="size-3.5" />
               <span className="hidden sm:inline">New</span>
@@ -288,7 +279,7 @@ export default function Header() {
               <button
                 type="button"
                 onClick={() => setShowContextMenu(!showContextMenu)}
-                className="inline-flex items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] p-1.5 text-zinc-400 transition-all duration-200 hover:border-white/[0.16] hover:bg-white/[0.08] hover:text-zinc-200"
+                className={headerBtn}
                 aria-label="Canvas actions"
               >
                 <MoreVertical className="size-3.5" />
@@ -299,31 +290,16 @@ export default function Header() {
                     className="fixed inset-0 z-40"
                     onClick={() => setShowContextMenu(false)}
                   />
-                  <div className="absolute right-0 top-full z-50 mt-1 w-40 rounded-xl border border-white/[0.08] bg-[#12121a] p-1 shadow-xl">
-                    <button
-                      type="button"
-                      onClick={handleStartRename}
-                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 transition-colors hover:bg-white/[0.06]"
-                      aria-label="Rename canvas"
-                    >
+                  <div className="absolute right-0 top-full z-50 mt-1 w-40 rounded-xl border border-border-subtle bg-surface-1 p-1 shadow-xl">
+                    <button type="button" onClick={handleStartRename} className={menuItem} aria-label="Rename canvas">
                       <SquarePen className="size-3.5" />
                       Rename
                     </button>
-                    <button
-                      type="button"
-                      onClick={handleDuplicate}
-                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 transition-colors hover:bg-white/[0.06]"
-                      aria-label="Duplicate canvas"
-                    >
+                    <button type="button" onClick={handleDuplicate} className={menuItem} aria-label="Duplicate canvas">
                       <Copy className="size-3.5" />
                       Duplicate
                     </button>
-                    <button
-                      type="button"
-                      onClick={handleImport}
-                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 transition-colors hover:bg-white/[0.06]"
-                      aria-label="Import components"
-                    >
+                    <button type="button" onClick={handleImport} className={menuItem} aria-label="Import components">
                       <Upload className="size-3.5" />
                       Import
                     </button>
@@ -331,7 +307,7 @@ export default function Header() {
                       <button
                         type="button"
                         onClick={handleDelete}
-                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-red-400 transition-colors hover:bg-red-500/10"
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-red-500 transition-colors hover:bg-red-50"
                         aria-label="Delete canvas"
                       >
                         <Trash2 className="size-3.5" />
@@ -343,19 +319,26 @@ export default function Header() {
               )}
             </div>
 
-            <div
-              className="flex items-center rounded-lg border border-white/[0.05] bg-white/[0.03] p-0.5"
-              aria-label="View mode"
-            >
+            <div className="flex items-center gap-2">
+              <ThemeSelector value={theme} onChange={setTheme} />
+              <DevicePreview
+                value={previewDevice}
+                onChange={setPreviewDevice}
+              />
+
+              <div
+                className="flex items-center rounded-lg border border-border-subtle bg-surface-1 p-0.5"
+                aria-label="View mode"
+              >
               <Button
                 type="button"
                 variant="ghost"
                 aria-pressed={editorMode === "editor"}
                 onClick={() => setEditorMode("editor")}
-                className={`h-7 gap-1.5 rounded-md px-2.5 text-[11px] font-medium transition-all duration-150 sm:px-3 ${
+                className={`h-7 gap-1.5 rounded-md px-2.5 text-xs font-medium transition-all duration-150 sm:px-3 ${
                   editorMode === "editor"
-                    ? "bg-white/[0.08] text-zinc-100 shadow-sm hover:bg-white/[0.1] hover:text-white"
-                    : "text-zinc-500 hover:bg-white/[0.05] hover:text-zinc-300"
+                    ? "bg-surface-3 text-text-primary shadow-sm"
+                    : "text-text-secondary hover:bg-hover-surface hover:text-text-primary"
                 }`}
               >
                 <Code2 className="size-3.5" />
@@ -366,15 +349,16 @@ export default function Header() {
                 variant="ghost"
                 aria-pressed={editorMode === "preview"}
                 onClick={() => setEditorMode("preview")}
-                className={`h-7 gap-1.5 rounded-md px-2.5 text-[11px] font-medium transition-all duration-150 sm:px-3 ${
+                className={`h-7 gap-1.5 rounded-md px-2.5 text-xs font-medium transition-all duration-150 sm:px-3 ${
                   editorMode === "preview"
-                    ? "bg-white/[0.08] text-zinc-100 shadow-sm hover:bg-white/[0.1] hover:text-white"
-                    : "text-zinc-500 hover:bg-white/[0.05] hover:text-zinc-300"
+                    ? "bg-surface-3 text-text-primary shadow-sm"
+                    : "text-text-secondary hover:bg-hover-surface hover:text-text-primary"
                 }`}
               >
                 <Eye className="size-3.5" />
                 <span className="hidden sm:inline">Preview</span>
               </Button>
+            </div>
             </div>
           </div>
         </div>

@@ -105,44 +105,44 @@ export default function ComponentContextMenu({
   return (
     <div
       ref={menuRef}
-      className="fixed z-50 w-48 rounded-xl border border-white/[0.08] bg-[#12121a] p-1 shadow-xl"
+      className="fixed z-50 w-48 rounded-xl border border-border-subtle dark:border-[rgba(139,92,246,0.12)] bg-surface-1 dark:bg-surface-2 p-1 shadow-xl dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
       style={{ left: position.x, top: position.y }}
       role="menu"
     >
       <div className="px-3 py-2">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-muted">
           {node?.type || "Component"}
         </p>
-        <p className="mt-0.5 truncate font-mono text-[10px] text-zinc-600">
+        <p className="mt-0.5 truncate font-mono text-xs text-text-muted">
           {componentId}
         </p>
       </div>
 
-      <div className="my-1 h-px bg-white/[0.05]" />
+      <div className="my-1 h-px bg-border-subtle" />
 
       <button
         type="button"
         onClick={handleDuplicate}
-        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 transition-colors hover:bg-white/[0.06]"
+        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-text-primary transition-colors hover:bg-hover-surface"
         role="menuitem"
         aria-label="Duplicate component"
       >
         <Copy className="size-3.5" />
         Duplicate
-        <span className="ml-auto text-[10px] text-zinc-600">Ctrl+D</span>
+        <span className="ml-auto text-xs text-text-muted">Ctrl+D</span>
       </button>
 
       {!isRoot && (
         <button
           type="button"
           onClick={handleDelete}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-red-400 transition-colors hover:bg-red-500/10"
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-red-500 transition-colors hover:bg-red-50"
           role="menuitem"
           aria-label="Delete component"
         >
           <Trash2 className="size-3.5" />
           Delete
-          <span className="ml-auto text-[10px] text-zinc-600">Del</span>
+          <span className="ml-auto text-xs text-text-muted">Del</span>
         </button>
       )}
 
@@ -150,7 +150,7 @@ export default function ComponentContextMenu({
         <button
           type="button"
           onClick={handleSelectParent}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 transition-colors hover:bg-white/[0.06]"
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-text-primary transition-colors hover:bg-hover-surface"
           role="menuitem"
           aria-label="Select parent component"
         >
@@ -159,12 +159,12 @@ export default function ComponentContextMenu({
         </button>
       )}
 
-      <div className="my-1 h-px bg-white/[0.05]" />
+      <div className="my-1 h-px bg-border-subtle" />
 
       <button
         type="button"
         onClick={handleCopyId}
-        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 transition-colors hover:bg-white/[0.06]"
+        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-text-primary transition-colors hover:bg-hover-surface"
         role="menuitem"
         aria-label="Copy component ID"
       >

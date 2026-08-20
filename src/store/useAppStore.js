@@ -206,6 +206,8 @@ export const useAppStore = create(
       activeCanvasId: null,
 
       editorMode: "editor",
+      previewDevice: "desktop",
+      theme: "dark",
       selectedComponentId: null,
       componentTree: cloneInitialTree(),
       _lastSubmitCommand: null,
@@ -272,6 +274,17 @@ export const useAppStore = create(
           s.activeCanvasId = canvas.id;
           s.componentTree = cloneInitialTree();
           s.selectedComponentId = null;
+        });
+        return canvas.id;
+      },
+
+      addCanvas: (canvas) => {
+        if (!canvas || !canvas.id || !canvas.componentTree) {
+          console.error("[Store] addCanvas: invalid canvas data");
+          return null;
+        }
+        set((s) => {
+          s.canvases.push(canvas);
         });
         return canvas.id;
       },
@@ -346,6 +359,18 @@ export const useAppStore = create(
       setEditorMode: (mode) => {
         set((state) => {
           state.editorMode = mode;
+        });
+      },
+
+      setPreviewDevice: (device) => {
+        set((state) => {
+          state.previewDevice = device;
+        });
+      },
+
+      setTheme: (theme) => {
+        set((state) => {
+          state.theme = theme;
         });
       },
 
@@ -679,6 +704,8 @@ export const useAppStore = create(
         activeCanvasId: state.activeCanvasId,
         selectedComponentId: state.selectedComponentId,
         editorMode: state.editorMode,
+        previewDevice: state.previewDevice,
+        theme: state.theme,
         aiProvider: state.aiProvider,
         aiModel: state.aiModel,
         providerPriority: state.providerPriority,

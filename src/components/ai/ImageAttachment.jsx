@@ -10,8 +10,8 @@ export default function ImageAttachment({ image, onRemove }) {
   if (!image) return null;
 
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] px-2 py-1.5">
-      <div className="relative size-10 shrink-0 overflow-hidden rounded-lg bg-zinc-800">
+    <div className="flex items-center gap-2 rounded-xl border border-border-subtle bg-surface-2 px-2 py-1.5">
+      <div className="relative size-10 shrink-0 overflow-hidden rounded-lg bg-surface-3">
         <img
           src={image.preview}
           alt={image.name}
@@ -19,10 +19,10 @@ export default function ImageAttachment({ image, onRemove }) {
         />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-xs font-medium text-zinc-200">
+        <p className="truncate text-xs font-medium text-text-primary">
           {image.name}
         </p>
-        <p className="text-[10px] text-zinc-500">
+        <p className="text-xs text-text-muted">
           {formatSize(image.size)}
         </p>
       </div>
@@ -30,7 +30,7 @@ export default function ImageAttachment({ image, onRemove }) {
         type="button"
         onClick={onRemove}
         aria-label="Remove image"
-        className="flex size-6 shrink-0 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-white/[0.08] hover:text-zinc-200"
+        className="flex size-6 shrink-0 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-surface-3 hover:text-text-primary"
       >
         <X className="size-3" />
       </button>

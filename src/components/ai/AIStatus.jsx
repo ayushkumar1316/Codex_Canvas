@@ -2,6 +2,7 @@ import { Check, AlertCircle, Sparkles, Activity, Zap, Bolt, Globe, Cpu } from "l
 import { useAppStore } from "@/store/useAppStore";
 import { getProviderTheme } from "@/ai/providerRegistry";
 import { getFriendlyErrorMessage } from "@/ai/providerManager";
+import { getModel } from "@/ai/models";
 import ThinkingIndicator from "./ThinkingIndicator";
 
 const phaseConfig = {
@@ -42,6 +43,7 @@ export default function AIStatus({ phase = "idle", error = null }) {
   const config = phaseConfig[phase];
   const aiActiveProvider = useAppStore((s) => s.aiActiveProvider);
   const aiProvider = useAppStore((s) => s.aiProvider);
+  const aiModel = useAppStore((s) => s.aiModel);
 
   if (!config) return null;
 
@@ -51,6 +53,9 @@ export default function AIStatus({ phase = "idle", error = null }) {
   const activeId = aiActiveProvider || (aiProvider === "auto" ? "gemini" : aiProvider);
   const activeTheme = getProviderTheme(activeId);
   const ProviderIcon = ICON_COMPONENTS[activeId] || Sparkles;
+
+  const modelInfo = getModel(aiModel);
+  const modelName = modelInfo?.displayName || aiModel || activeTheme.name;
 
   let displayText;
   if (phase === "error") {
@@ -69,8 +74,8 @@ export default function AIStatus({ phase = "idle", error = null }) {
       {isThinking ? (
         <>
           <ProviderIcon className={`size-3 ${activeTheme.colorClass}`} />
-          <span className="font-medium">{activeTheme.name}</span>
-          <span className="text-zinc-500">{" "}&middot;{" "}</span>
+          <span className="font-medium">{modelName}</span>
+          <span className="text-text-muted">{" "}&middot;{" "}</span>
           <span>{displayText}</span>
           <Activity className="size-3 animate-pulse text-purple-400" />
         </>

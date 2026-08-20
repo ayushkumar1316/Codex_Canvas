@@ -131,34 +131,35 @@ export default function AIPill() {
       <button
         type="button"
         onClick={() => setExpanded(true)}
-        className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full border px-4 py-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.3)] backdrop-blur-xl transition-all duration-200 hover:shadow-[0_8px_40px_rgba(0,0,0,0.4)] hover:scale-105 active:scale-95 border-white/[0.1] bg-white/[0.06] hover:bg-white/[0.1]`}
+        className={`fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full border px-4 py-2.5 shadow-theme-lg transition-all duration-150 hover:shadow-theme-xl hover:scale-[1.03] active:scale-95 border-border-subtle dark:border-[rgba(139,92,246,0.15)] bg-surface-1 dark:bg-gradient-to-r dark:from-surface-1 dark:to-surface-2 hover:bg-surface-2`}
       >
-        <span className="flex items-center gap-2 text-[13px] font-medium text-zinc-300">
-          <Sparkles className="size-3.5 text-purple-500" />
+        <span className="flex items-center gap-2 text-[13px] font-medium text-text-primary">
+          <Sparkles className="size-3.5 text-primary" />
           Ask AI
-          <ChevronDown className="size-3.5 text-zinc-500" />
+          <ChevronDown className="size-3.5 text-text-muted" />
         </span>
       </button>
     );
   }
 
-  const idleBorder = "border-white/[0.1]";
-  const idleBg = "bg-white/[0.06]";
-  const focusBorder = "focus-within:border-purple-500/40 focus-within:bg-white/[0.08]";
-  const innerGradient = "bg-gradient-to-b from-white/[0.03] to-transparent";
-  const textColor = "text-zinc-100";
-  const placeholderColor = "text-zinc-600";
-  const badgeBorder = "border-purple-400/15";
-  const badgeBg = "bg-purple-500/[0.08]";
-  const badgeText = "text-purple-200";
-  const iconMuted = "text-zinc-500";
-  const iconHover = "hover:bg-white/[0.07] hover:text-zinc-200";
-  const statusText = "text-zinc-600";
-  const dismissHover = "hover:text-zinc-300";
-  const inactiveBtn = "bg-white/[0.06] text-zinc-500";
+  const idleBorder = "border-border-subtle dark:border-[rgba(139,92,246,0.12)]";
+  const idleBg = "bg-surface-1 dark:bg-gradient-to-b dark:from-surface-1 dark:to-surface-0";
+  const focusBorder = "focus-within:border-primary/40 focus-within:bg-surface-2";
+  const innerGradient = "bg-gradient-to-b from-surface-2/50 to-transparent";
+  const textColor = "text-text-primary";
+  const placeholderColor = "text-text-muted";
+  const badgeBorder = "border-primary/15 dark:border-primary/25";
+  const badgeBg = "bg-primary/8 dark:bg-primary/15";
+  const badgeText = "text-primary";
+  const iconMuted = "text-text-muted";
+  const iconHover = "hover:bg-surface-3 hover:text-text-primary";
+  const statusText = "text-text-muted";
+  const dismissHover = "hover:text-text-secondary";
+  const inactiveBtn = "bg-surface-2 dark:bg-surface-3 text-text-muted";
 
   return (
     <div
+      data-ai-pill
       className="fixed bottom-8 left-1/2 z-50 w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2"
       onDragOver={(e) => e.preventDefault()}
       onDrop={handleDrop}
@@ -175,9 +176,9 @@ export default function AIPill() {
       />
 
       <div
-        className={`rounded-2xl border p-[3px] shadow-[0_8px_40px_rgba(0,0,0,0.3)] backdrop-blur-xl transition-all duration-300 ${
+        className={`rounded-2xl border p-[3px] shadow-theme-xl transition-all duration-300 dark:shadow-[0_8px_40px_rgba(0,0,0,0.5)] ${
           sendFlash && !reduced
-            ? "border-purple-400/40 bg-white/[0.06] shadow-[0_0_30px_rgba(139,92,246,0.2)] scale-[1.01]"
+            ? "border-primary/40 bg-surface-1 shadow-[0_0_30px_hsl(var(--primary)/0.2)] scale-[1.01]"
             : isListening
             ? "border-red-500/30 shadow-[0_8px_40px_rgba(239,68,68,0.12)]"
             : isProcessing
@@ -327,7 +328,7 @@ export default function AIPill() {
             <button
               type="button"
               onClick={handleDismissError}
-              className={`text-[11px] ${statusText} transition-colors ${dismissHover}`}
+              className={`text-xs ${statusText} transition-colors ${dismissHover}`}
             >
               Dismiss
             </button>
@@ -337,14 +338,14 @@ export default function AIPill() {
             <button
               type="button"
               onClick={() => useAppStore.setState({ aiPhase: "idle" })}
-              className={`text-[11px] ${statusText} transition-colors ${dismissHover}`}
+              className={`text-xs ${statusText} transition-colors ${dismissHover}`}
             >
               Dismiss
             </button>
           )}
 
           {isIdle && !aiError && !voiceError && !imageError && !isListening && (
-            <span className={`text-[11px] ${statusText}`}>
+            <span className={`text-xs ${statusText}`}>
               {hasImage ? "Describe the changes you want" : isSupported ? "Tip: Attach a screenshot or use voice" : "Press Enter to send"}
             </span>
           )}

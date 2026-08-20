@@ -267,7 +267,7 @@ export default function CommandPalette({ isOpen, onClose }) {
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
       <div className="relative w-full max-w-lg rounded-2xl border border-white/[0.08] bg-[#12121a] shadow-2xl">
         <div className="flex items-center gap-3 border-b border-white/[0.05] px-4 py-3">
-          <Search className="size-4 text-zinc-500" />
+          <Search className="size-4 text-zinc-400" />
           <input
             ref={inputRef}
             type="text"
@@ -277,13 +277,13 @@ export default function CommandPalette({ isOpen, onClose }) {
               setSelectedIndex(0);
             }}
             placeholder="Search commands..."
-            className="flex-1 bg-transparent text-sm text-zinc-100 outline-none placeholder:text-zinc-500"
+            className="flex-1 bg-transparent text-sm text-zinc-100 outline-none placeholder:text-zinc-400"
             aria-label="Search commands"
           />
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-zinc-500 hover:bg-white/[0.06] hover:text-zinc-300"
+            className="rounded-md p-1 text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-300"
             aria-label="Close command palette"
           >
             <X className="size-4" />
@@ -296,7 +296,7 @@ export default function CommandPalette({ isOpen, onClose }) {
           role="listbox"
         >
           {filteredCommands.length === 0 ? (
-            <div className="py-8 text-center text-sm text-zinc-500">
+            <div className="py-8 text-center text-sm text-zinc-400">
               No commands found
             </div>
           ) : (
@@ -320,10 +320,10 @@ export default function CommandPalette({ isOpen, onClose }) {
                   role="option"
                   aria-selected={index === selectedIndex}
                 >
-                  <Icon className="size-4 shrink-0 text-zinc-500" />
+                  <Icon className="size-4 shrink-0 text-zinc-400" />
                   <span className="flex-1 text-left">{command.label}</span>
                   {command.shortcut && (
-                    <span className="text-xs text-zinc-600">
+                    <span className="text-xs text-zinc-400">
                       {command.shortcut}
                     </span>
                   )}
@@ -334,7 +334,7 @@ export default function CommandPalette({ isOpen, onClose }) {
         </div>
 
         <div className="flex items-center justify-between border-t border-white/[0.05] px-4 py-2.5">
-          <div className="flex items-center gap-2 text-[10px] text-zinc-600">
+          <div className="flex items-center gap-2 text-xs text-zinc-400">
             <span className="rounded bg-white/[0.06] px-1.5 py-0.5">↑↓</span>
             <span>Navigate</span>
             <span className="rounded bg-white/[0.06] px-1.5 py-0.5">↵</span>

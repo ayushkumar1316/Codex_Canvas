@@ -5,6 +5,7 @@ import {
   isVaguePrompt,
   calculateComplexity,
 } from "./optimizationRules";
+import { enrichWithDesignIntent } from "./designIntentEnricher";
 
 function calculateConfidence(promptType, wasExpanded, originalPrompt) {
   let confidence = 0.7;
@@ -60,6 +61,12 @@ export function optimizePrompt(prompt, options = {}) {
         : expansion;
       wasExpanded = true;
     }
+  }
+
+  const designIntent = enrichWithDesignIntent(rawPrompt, null, options.context || {});
+  if (designIntent) {
+    optimizedPrompt = `[USER REQUEST]: ${optimizedPrompt}\n\n[DESIGN ANALYSIS]:\n${designIntent}`;
+    wasExpanded = true;
   }
 
   const confidence = calculateConfidence(promptType, wasExpanded, rawPrompt);

@@ -317,6 +317,12 @@ function setVersion(response) {
 
 function stripResponseExtraKeys(response) {
   if (!response || typeof response !== "object") return response;
+
+  if (!Array.isArray(response.operations) && Array.isArray(response.ops)) {
+    response.operations = response.ops;
+  }
+  delete response.ops;
+
   if (!Array.isArray(response.operations)) return response;
 
   for (const key of Object.keys(response)) {
@@ -352,8 +358,8 @@ function convertReplaceWithInlineChildren(response) {
   const needsReplaceTreeConversion = response.operations.some(
     (op) => op && typeof op === "object" &&
       (op.type === "replace_tree" || op.type === "replaceTree") &&
-      op.tree && typeof op.tree === "object" &&
-      typeof op.tree.type === "string"
+      (op.tree || op.payload) && typeof (op.tree || op.payload) === "object" &&
+      typeof (op.tree || op.payload).type === "string"
   );
 
   if (!needsReplaceConversion && !needsReplaceTreeConversion) return response;
@@ -384,14 +390,15 @@ function convertReplaceWithInlineChildren(response) {
       for (const child of op.children) {
         flattenChild(child, parentId);
       }
-    } else if ((op.type === "replace_tree" || op.type === "replaceTree") && op.tree) {
-      const root = normalizeRawNode(op.tree);
+    } else if ((op.type === "replace_tree" || op.type === "replaceTree") && (op.tree || op.payload)) {
+      const treeData = op.tree || op.payload;
+      const root = normalizeRawNode(treeData);
       newOps.push({
         type: "replaceNode",
         targetId: "root",
         node: { ...root, children: [] },
       });
-      for (const child of (op.tree.children || [])) {
+      for (const child of (treeData.children || [])) {
         flattenChild(child, root.id);
       }
     } else {
@@ -428,6 +435,20 @@ function mapOperationTypes(response) {
         }
         if (op.type === "replace_tree") {
           return convertReplaceTreeToReplaceNode(op);
+        }
+        if (op.type === "updateNode" || op.type === "changeNode" || op.type === "setNode") {
+          return {
+            type: "updateProps",
+            targetId: op.targetId || op.id || "root",
+            props: op.props || op.node?.props || {},
+          };
+        }
+        if (op.type === "modifyNode") {
+          return {
+            type: "updateStyles",
+            targetId: op.targetId || op.id || "root",
+            styles: op.styles || op.node?.styles || {},
+          };
         }
         if (looksLikeComponentNode(op)) {
           return convertComponentToInsert(op);
@@ -713,29 +734,176 @@ function dropDanglingUpdateOps(response, tree) {
   return response;
 }
 
+const RAW_TYPE_MAP = {
+  create: "insertNode",
+  insert: "insertNode",
+  add: "insertNode",
+  addNode: "insertNode",
+  create_component: "insertNode",
+  createComponent: "insertNode",
+  add_component: "insertNode",
+  addComponent: "insertNode",
+  add_child: "insertNode",
+  add_children: "insertNode",
+  append_child: "insertNode",
+  update: "updateProps",
+  modify: "updateStyles",
+  change: "updateStyles",
+  set: "updateProps",
+  update_component: "updateProps",
+  update_style: "updateStyles",
+  update_styles: "updateStyles",
+  modify_component: "updateStyles",
+  updateNode: "updateProps",
+  modifyNode: "updateStyles",
+  remove_component: "deleteNode",
+  delete_component: "deleteNode",
+  replace_component: "replaceNode",
+  create_component_tree: "replaceNode",
+  createComponentTree: "replaceNode",
+  replace_tree: "replaceNode",
+  replaceTree: "replaceNode",
+};
+
+function normalizeRawOperation(op) {
+  if (!op || typeof op !== "object") return;
+
+  if (!op.type && typeof op.operation === "string") {
+    op.type = op.operation;
+  }
+
+  const mapped = RAW_TYPE_MAP[op.type];
+  if (mapped) op.type = mapped;
+
+  if (op.component && !op.node) {
+    op.node = op.component;
+    delete op.component;
+  }
+
+  if (op.tree && !op.node) {
+    op.node = op.tree;
+    delete op.tree;
+  }
+
+  if (op.component_tree && !op.node && typeof op.component_tree === "object") {
+    op.node = op.component_tree;
+    delete op.component_tree;
+  }
+
+  if (op.componentTree && !op.node && typeof op.componentTree === "object") {
+    op.node = op.componentTree;
+    delete op.componentTree;
+  }
+
+  if (op.payload && !op.node && typeof op.payload === "object") {
+    op.node = op.payload;
+    delete op.payload;
+  }
+
+  if (op.target && !op.parentId) {
+    const ref = op.target;
+    op.parentId = typeof ref === "string" ? ref : (ref?.id || ref?.targetId || "root");
+    delete op.target;
+  }
+
+  if (op.targetId && !op.parentId && op.type === "insertNode") {
+    op.parentId = typeof op.targetId === "string" ? op.targetId : "root";
+  }
+
+  if (op.id && !op.targetId && op.type !== "insertNode") {
+    op.targetId = typeof op.id === "string" ? op.id : "root";
+    delete op.id;
+  }
+}
+
 function fillOperationDefaults(response) {
   if (!response || !Array.isArray(response.operations)) return response;
 
   for (const op of response.operations) {
     if (!op || typeof op !== "object") continue;
 
+    normalizeRawOperation(op);
+
     if (op.type === "insertNode") {
       if (!op.parentId) op.parentId = "root";
+      if (typeof op.parentId !== "string") op.parentId = String(op.parentId);
       if (!op.position) op.position = "end";
       if (!op.node || typeof op.node !== "object") op.node = defaultNode();
     } else if (op.type === "updateProps") {
       if (!op.targetId) op.targetId = "root";
+      if (typeof op.targetId !== "string") op.targetId = String(op.targetId);
       if (!isObject(op.props)) op.props = {};
     } else if (op.type === "updateStyles") {
       if (!op.targetId) op.targetId = "root";
+      if (typeof op.targetId !== "string") op.targetId = String(op.targetId);
       if (!isObject(op.styles)) op.styles = {};
     } else if (op.type === "replaceNode") {
+      if (!op.node && op.payload && typeof op.payload === "object") {
+        op.node = op.payload;
+        delete op.payload;
+      }
+      if (!op.targetId && op.node && typeof op.node === "object" && op.node.id) {
+        op.targetId = String(op.node.id);
+      }
       if (!op.targetId) op.targetId = "root";
+      if (typeof op.targetId !== "string") op.targetId = String(op.targetId);
       if (!op.node || typeof op.node !== "object") {
         op.node = defaultNode();
       }
     } else if (op.type === "deleteNode") {
       if (!op.targetId) op.targetId = "root";
+      if (typeof op.targetId !== "string") op.targetId = String(op.targetId);
+    }
+  }
+
+  return response;
+}
+
+const STYLE_PROP_KEYS = new Set([
+  "backgroundColor", "background", "backgroundImage", "backgroundSize", "backgroundPosition",
+  "color", "foregroundColor",
+  "fontSize", "fontFamily", "fontWeight", "fontStyle", "lineHeight", "letterSpacing", "textAlign", "textDecoration", "textTransform",
+  "padding", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
+  "margin", "marginTop", "marginRight", "marginBottom", "marginLeft",
+  "border", "borderWidth", "borderColor", "borderStyle", "borderRadius", "borderTop", "borderBottom", "borderLeft", "borderRight",
+  "display", "flexDirection", "flexWrap", "justifyContent", "alignItems", "alignSelf", "gap", "rowGap", "columnGap",
+  "gridTemplateColumns", "gridTemplateRows", "gridColumn", "gridRow",
+  "position", "top", "left", "right", "bottom", "zIndex",
+  "opacity", "boxShadow", "backdropFilter", "filter", "overflow", "overflowX", "overflowY",
+  "width", "height", "minWidth", "minHeight", "maxWidth", "maxHeight",
+  "transition", "transform", "cursor", "objectFit",
+]);
+
+export function moveStylePropsFromPropsToStyles(response) {
+  if (!response || !Array.isArray(response.operations)) return response;
+
+  for (const op of response.operations) {
+    if (!op || typeof op !== "object") continue;
+    if (op.type !== "updateProps" || !op.props || typeof op.props !== "object") continue;
+
+    const styleProps = {};
+    const remainingProps = {};
+    let hasStyleProps = false;
+
+    for (const [key, value] of Object.entries(op.props)) {
+      if (STYLE_PROP_KEYS.has(key) && value !== undefined && value !== null && value !== "") {
+        styleProps[key] = value;
+        hasStyleProps = true;
+      } else {
+        remainingProps[key] = value;
+      }
+    }
+
+    if (hasStyleProps) {
+      if (Object.keys(remainingProps).length === 0) {
+        op.type = "updateStyles";
+        op.styles = styleProps;
+        delete op.props;
+      } else {
+        op.props = remainingProps;
+        op.styles = { ...(op.styles || {}), ...styleProps };
+        op.type = "updateStyles";
+      }
     }
   }
 
@@ -754,16 +922,25 @@ function fixPositions(response) {
   return response;
 }
 
+function resolveStringRef(value) {
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object") {
+    if (typeof value.id === "string") return value.id;
+    if (typeof value.targetId === "string") return value.targetId;
+  }
+  return value;
+}
+
 function coerceStringFields(response) {
   if (!response || !Array.isArray(response.operations)) return response;
 
   for (const op of response.operations) {
     if (!op || typeof op !== "object") continue;
     if (op.targetId !== undefined && typeof op.targetId !== "string") {
-      op.targetId = String(op.targetId);
+      op.targetId = resolveStringRef(op.targetId);
     }
     if (op.parentId !== undefined && typeof op.parentId !== "string") {
-      op.parentId = String(op.parentId);
+      op.parentId = resolveStringRef(op.parentId);
     }
   }
 
@@ -1070,6 +1247,8 @@ export function repairResponse(response, validationErrors, context = {}) {
       response: result,
     };
   }
+
+  moveStylePropsFromPropsToStyles(result);
 
   return {
     repaired: repairedFields.length > 0,

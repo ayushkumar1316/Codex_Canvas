@@ -1,9 +1,9 @@
 import { isLightColor, isTransparentOrMissing } from "./colorUtils";
 
-const SYSTEM_FONT =
-  '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+const SYSTEM_FONT = '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
 
 const LIGHT_BG = "#ffffff";
+const DARK_BG = "#09090b";
 const LIGHT_TEXT = "#0f172a";
 const DARK_TEXT = "#f8fafc";
 

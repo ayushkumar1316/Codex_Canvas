@@ -163,16 +163,16 @@ export const INTENT_PRIORITY = [
 ];
 
 export const OPERATION_MAP = {
-  generate: ["create_component_tree", "replace_tree"],
-  edit: ["modify_props", "modify_styles", "rename"],
-  insert: ["add_component", "add_children"],
-  delete: ["remove_component", "remove_children"],
-  style: ["modify_styles", "update_theme"],
-  layout: ["reorder", "resize", "reposition"],
-  content: ["modify_props", "update_text"],
-  image: ["analyze_reference", "apply_style"],
-  voice: ["transcribe", "process_intent"],
-  unknown: ["process_generic"],
+  generate: ["insertNode", "replaceNode"],
+  edit: ["updateProps", "updateStyles"],
+  insert: ["insertNode"],
+  delete: ["deleteNode"],
+  style: ["updateStyles"],
+  layout: ["updateProps", "updateStyles"],
+  content: ["updateProps"],
+  image: ["insertNode", "updateProps"],
+  voice: ["updateProps", "updateStyles"],
+  unknown: ["updateProps"],
 };
 
 export const FUTURE_INTENTS = [

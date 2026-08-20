@@ -1,13 +1,23 @@
-import { useEffect, useReducer } from "react";
-import { Check, Circle } from "lucide-react";
+import { useEffect, useReducer, useRef, useState } from "react";
+import { Check, Circle, Sparkles, Zap, Bolt, Globe, Cpu } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { getProviderTheme } from "@/ai/providerRegistry";
+import { getModel } from "@/ai/models";
 
 const phases = [
   { key: "understanding", label: "Understanding Prompt" },
   { key: "planning", label: "Planning Changes" },
   { key: "applying", label: "Generating Components" },
 ];
+
+const ICONS = {
+  auto: Sparkles,
+  gemini: Zap,
+  groq: Bolt,
+  openrouter: Globe,
+  openai: Cpu,
+};
 
 function timelineReducer(state, action) {
   switch (action.type) {
@@ -26,11 +36,29 @@ function timelineReducer(state, action) {
 
 export default function AITimeline() {
   const aiPhase = useAppStore((state) => state.aiPhase);
+  const aiActiveProvider = useAppStore((s) => s.aiActiveProvider);
+  const aiProvider = useAppStore((s) => s.aiProvider);
+  const aiModel = useAppStore((s) => s.aiModel);
   const reduced = useReducedMotion();
+  const pillRef = useRef(null);
+  const [offset, setOffset] = useState(140);
   const [state, dispatch] = useReducer(timelineReducer, {
     visible: false,
     exiting: false,
   });
+
+  useEffect(() => {
+    const pill = document.querySelector("[data-ai-pill]");
+    if (!pill) return;
+    const obs = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const rect = entry.contentRect;
+        setOffset(rect.height + 24);
+      }
+    });
+    obs.observe(pill);
+    return () => obs.disconnect();
+  }, []);
 
   useEffect(() => {
     if (aiPhase === "understanding" || aiPhase === "planning" || aiPhase === "applying") {
@@ -47,12 +75,19 @@ export default function AITimeline() {
   if (!state.visible) return null;
 
   const activeIndex = phases.findIndex((p) => p.key === aiPhase);
+  const activeId = aiActiveProvider || (aiProvider === "auto" ? "gemini" : aiProvider);
+  const activeTheme = getProviderTheme(activeId);
+  const ActiveIcon = ICONS[activeId] || Sparkles;
+  const modelInfo = getModel(aiModel);
+  const modelName = modelInfo?.displayName || aiModel || null;
 
   return (
     <div
-      className={`fixed bottom-[140px] left-1/2 z-40 -translate-x-1/2 rounded-xl border border-white/[0.08] bg-[#0a0a0e]/90 px-4 py-3 shadow-xl backdrop-blur-xl transition-all duration-300 ${
+      ref={pillRef}
+      className={`fixed left-1/2 z-50 -translate-x-1/2 rounded-xl border border-border-subtle dark:border-[rgba(139,92,246,0.15)] bg-surface-1/90 dark:bg-surface-2/90 px-4 py-3 shadow-xl dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all duration-300 ${
         state.exiting && !reduced ? "opacity-0 translate-y-2 scale-95" : "opacity-100"
       }`}
+      style={{ bottom: offset }}
     >
       <div className="flex items-center gap-3">
         {phases.map((phase, i) => {
@@ -70,15 +105,15 @@ export default function AITimeline() {
                     <span className="relative inline-flex size-3 rounded-full bg-violet-500" />
                   </span>
                 ) : (
-                  <Circle className="size-3 text-zinc-600" />
+                  <Circle className="size-3 text-text-muted" />
                 )}
                 <span
-                  className={`text-[11px] font-medium ${
+                  className={`text-xs font-medium ${
                     isComplete
                       ? "text-emerald-400"
                       : isCurrent
                         ? "text-violet-300"
-                        : "text-zinc-600"
+                        : "text-text-muted"
                   }`}
                 >
                   {phase.label}
@@ -92,12 +127,25 @@ export default function AITimeline() {
         })}
       </div>
 
-      {!reduced && (
-        <div className="mt-2 flex items-center gap-1.5 text-[10px] text-zinc-500">
-          <span className="inline-block w-1.5 h-3 bg-violet-400 animate-[cursor-blink_1s_infinite]" />
-          Generating...
-        </div>
-      )}
+      <div className="mt-2 flex items-center gap-2 text-xs text-text-muted">
+        <ActiveIcon className={`size-3 ${activeTheme.colorClass}`} />
+        <span className="font-medium text-text-primary">{activeTheme.name}</span>
+        {modelName && (
+          <>
+            <span className="text-text-muted">&middot;</span>
+            <span className="text-text-secondary">{modelName}</span>
+          </>
+        )}
+        {!reduced && (
+          <>
+            <span className="text-text-muted">&middot;</span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-1.5 h-3 bg-violet-400 animate-[cursor-blink_1s_infinite]" />
+              Generating...
+            </span>
+          </>
+        )}
+      </div>
     </div>
   );
 }

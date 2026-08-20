@@ -39,14 +39,14 @@ export default function SuccessToast() {
 
   return (
     <div
-      className={`fixed top-5 right-5 z-50 flex items-center gap-2.5 rounded-xl border border-emerald-500/20 bg-[#0a0a0e]/90 px-4 py-2.5 shadow-xl backdrop-blur-xl ${
+      className={`fixed top-5 right-5 z-50 flex items-center gap-2.5 rounded-xl border border-emerald-500/20 dark:border-emerald-500/30 bg-surface-1/90 dark:bg-surface-2/90 px-4 py-2.5 shadow-xl dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)] ${
         !reduced ? (exiting ? "animate-toast-out" : "animate-toast-in") : ""
       }`}
     >
       <span className="flex size-6 items-center justify-center rounded-lg bg-emerald-500/15">
         <Sparkles className="size-3.5 text-emerald-400" />
       </span>
-      <span className="text-[13px] font-medium text-zinc-200">
+      <span className="text-[13px] font-medium text-text-primary">
         Canvas updated successfully
       </span>
     </div>

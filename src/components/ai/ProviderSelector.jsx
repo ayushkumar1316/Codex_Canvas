@@ -44,8 +44,8 @@ const STATUS_THEME = {
   rate_limited: { label: "Rate Limited", color: "bg-orange-400", textColor: "text-orange-400" },
   offline: { label: "Offline", color: "bg-red-400", textColor: "text-red-400" },
   api_key_missing: { label: "API Key Missing", color: "bg-red-400", textColor: "text-red-400" },
-  disabled: { label: "Disabled", color: "bg-zinc-500", textColor: "text-zinc-500" },
-  unknown: { label: "Unknown", color: "bg-zinc-500", textColor: "text-zinc-500" },
+  disabled: { label: "Disabled", color: "bg-zinc-500", textColor: "text-zinc-400" },
+  unknown: { label: "Unknown", color: "bg-zinc-500", textColor: "text-zinc-400" },
 };
 
 function getStatusForSelector(providerId) {
@@ -204,8 +204,8 @@ export default function ProviderSelector({ variant = "landing" }) {
   };
 
   const pillBase = variant === "landing"
-    ? "flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.05] px-3 py-1.5 text-[11px] font-medium text-zinc-300 backdrop-blur-sm transition-all duration-200 hover:border-white/[0.15] hover:bg-white/[0.08]"
-    : "flex shrink-0 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.05] px-3 text-[11px] font-medium text-zinc-300 backdrop-blur-sm transition-all duration-200 hover:border-white/[0.15] hover:bg-white/[0.08]";
+    ? "flex items-center gap-1.5 rounded-full border border-border-subtle dark:border-[rgba(139,92,246,0.12)] bg-surface-1 dark:bg-surface-2/50 px-3 py-1.5 text-xs font-medium text-text-primary transition-all duration-200 hover:border-border-default hover:bg-surface-2"
+    : "flex shrink-0 items-center gap-1.5 rounded-xl border border-border-subtle dark:border-[rgba(139,92,246,0.12)] bg-surface-1 dark:bg-surface-2/50 px-3 text-xs font-medium text-text-primary transition-all duration-200 hover:border-border-default hover:bg-surface-2";
 
   const allProviders = ["auto", ...getProviderIds()];
 
@@ -235,24 +235,24 @@ export default function ProviderSelector({ variant = "landing" }) {
           </>
         )}
         <span className={`size-1.5 rounded-full ${getStatusForSelector(activeProviderId).color} transition-colors duration-300`} />
-        <ChevronDown className={`size-3.5 text-zinc-500 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`size-3.5 text-text-muted transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
         <div
           role="listbox"
           aria-label="Select AI provider"
-          className="absolute bottom-full left-0 z-50 mb-2 w-80 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#12121a] shadow-[0_16px_48px_rgba(0,0,0,0.5)] backdrop-blur-xl"
+          className="absolute bottom-full left-0 z-50 mb-2 w-80 overflow-hidden rounded-2xl border border-border-subtle dark:border-[rgba(139,92,246,0.12)] bg-surface-1 dark:bg-surface-2 shadow-theme-xl dark:shadow-[0_8px_40px_rgba(0,0,0,0.5)]"
           onKeyDown={handleKeyDown}
         >
-          <div className="flex items-center justify-between border-b border-white/[0.05] px-4 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+          <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">
               AI Provider
             </p>
             <button
               type="button"
               onClick={handleRefreshHealth}
-              className="flex items-center gap-1 text-[10px] text-zinc-500 transition-colors hover:text-zinc-300"
+              className="flex items-center gap-1 text-xs text-text-muted transition-colors hover:text-text-secondary"
               title="Refresh health status"
             >
               <RefreshCw className="size-3" />
@@ -261,19 +261,19 @@ export default function ProviderSelector({ variant = "landing" }) {
           </div>
 
           {isGenerating && (
-            <div className="flex items-center gap-2 border-b border-white/[0.05] bg-purple-500/5 px-4 py-2.5">
+            <div className="flex items-center gap-2 border-b border-border-subtle bg-primary/5 px-4 py-2.5">
               <ActiveIcon className={`size-3.5 ${activeTheme.colorClass}`} />
-              <span className="text-[11px] text-zinc-300">
-                Generating with <span className="font-medium text-zinc-200">{activeTheme.name}...</span>
+              <span className="text-xs text-text-secondary">
+                Generating with <span className="font-medium text-text-primary">{activeTheme.name}...</span>
               </span>
               <Activity className="ml-auto size-3 animate-pulse text-purple-400" />
             </div>
           )}
 
           {fallbackInfo && (
-            <div className="flex items-center gap-2 border-b border-white/[0.05] bg-amber-500/5 px-4 py-2.5">
-              <AlertTriangle className="size-3.5 text-amber-400" />
-              <span className="text-[11px] text-zinc-300">{fallbackInfo.message}</span>
+            <div className="flex items-center gap-2 border-b border-border-subtle bg-amber-500/5 px-4 py-2.5">
+              <AlertTriangle className="size-3.5 text-amber-500" />
+              <span className="text-xs text-text-secondary">{fallbackInfo.message}</span>
             </div>
           )}
 
@@ -322,7 +322,7 @@ export default function ProviderSelector({ variant = "landing" }) {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-medium text-zinc-200">
+                        <span className="text-[13px] font-medium text-text-primary">
                           {theme.name}
                         </span>
                         <span className={`size-1.5 rounded-full ${statusInfo.color}`} />
@@ -334,7 +334,7 @@ export default function ProviderSelector({ variant = "landing" }) {
                       </div>
                       <div className="mt-0.5 flex flex-wrap items-center gap-1">
                         {providerId === "auto" ? (
-                          <span className="text-[11px] text-zinc-500">{theme.description}</span>
+                      <span className="text-xs text-text-secondary">{theme.description}</span>
                         ) : (
                           capabilities.slice(0, 4).map((cap) => {
                             const label = CAPABILITY_LABELS[cap];
@@ -372,10 +372,10 @@ export default function ProviderSelector({ variant = "landing" }) {
                             className={`flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left transition-all duration-150 ${
                               isModelSelected
                                 ? "bg-purple-500/10 text-purple-300"
-                                : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-300"
+                                : "text-text-muted hover:bg-hover-surface hover:text-text-secondary"
                             }`}
                           >
-                            <Circle className={`size-1.5 ${isModelSelected ? "fill-purple-400 text-purple-400" : "text-zinc-600"}`} />
+                            <Circle className={`size-1.5 ${isModelSelected ? "fill-primary text-primary" : "text-text-muted"}`} />
                             <span className="text-[12px]">{model.name}</span>
                             {isModelSelected && (
                               <Check className="ml-auto size-3 text-purple-400" />
@@ -393,7 +393,7 @@ export default function ProviderSelector({ variant = "landing" }) {
                           type="button"
                           onClick={(e) => handleTestConnection(providerId, e)}
                           disabled={isTesting}
-                          className="flex items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2 py-1 text-[10px] text-zinc-400 transition-all hover:bg-white/[0.06] hover:text-zinc-300 disabled:opacity-50"
+                          className="flex items-center gap-1 rounded-lg border border-border-subtle bg-surface-2 px-2 py-1 text-xs text-text-muted transition-all hover:bg-surface-3 hover:text-text-secondary disabled:opacity-50"
                         >
                           {isTesting ? (
                             <RefreshCw className="size-2.5 animate-spin" />
@@ -408,7 +408,7 @@ export default function ProviderSelector({ variant = "landing" }) {
                             e.stopPropagation();
                             setExpandedCard(isExpanded ? null : providerId);
                           }}
-                          className="flex items-center gap-1 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2 py-1 text-[10px] text-zinc-400 transition-all hover:bg-white/[0.06] hover:text-zinc-300"
+                          className="flex items-center gap-1 rounded-lg border border-border-subtle bg-surface-2 px-2 py-1 text-xs text-text-muted transition-all hover:bg-surface-3 hover:text-text-secondary"
                         >
                           Details
                           <ChevronRight className={`size-2.5 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
@@ -416,31 +416,31 @@ export default function ProviderSelector({ variant = "landing" }) {
                       </div>
 
                       {testResult && (
-                        <div className={`rounded-lg px-2.5 py-1.5 text-[10px] ${testResult.success ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+                        <div className={`rounded-lg px-2.5 py-1.5 text-xs ${testResult.success ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
                           {testResult.message}
                         </div>
                       )}
 
                       {isExpanded && (
                         <div className="space-y-1 rounded-lg border border-white/[0.05] bg-white/[0.02] p-2.5">
-                          <div className="grid grid-cols-2 gap-1.5 text-[10px]">
-                            <div className="text-zinc-500">Provider</div>
+                          <div className="grid grid-cols-2 gap-1.5 text-xs">
+                            <div className="text-zinc-400">Provider</div>
                             <div className="text-zinc-300">{theme.name}</div>
-                            <div className="text-zinc-500">Model</div>
+                            <div className="text-zinc-400">Model</div>
                             <div className="text-zinc-300">{getProviderModel(providerId)}</div>
-                            <div className="text-zinc-500">Status</div>
+                            <div className="text-zinc-400">Status</div>
                             <div className={statusConfig.textColor}>{statusConfig.label}</div>
-                            <div className="text-zinc-500">API Key</div>
+                            <div className="text-zinc-400">API Key</div>
                             <div className={hasApiKey(providerId) ? "text-emerald-400" : "text-red-400"}>
                               {hasApiKey(providerId) ? "Configured" : "Missing"}
                             </div>
-                            <div className="text-zinc-500">Last Checked</div>
+                            <div className="text-zinc-400">Last Checked</div>
                             <div className="text-zinc-300">{formatTime(providerHealth?.lastChecked)}</div>
                             {providerHealth && (
                               <>
-                                <div className="text-zinc-500">Response Time</div>
+                                <div className="text-zinc-400">Response Time</div>
                                 <div className="text-zinc-300">{Math.round(providerHealth.avgResponseTime || 0)}ms</div>
-                                <div className="text-zinc-500">Requests</div>
+                                <div className="text-zinc-400">Requests</div>
                                 <div className="text-zinc-300">{providerHealth.totalRequests || 0}</div>
                               </>
                             )}
@@ -454,14 +454,14 @@ export default function ProviderSelector({ variant = "landing" }) {
             })}
           </div>
 
-          <div className="border-t border-white/[0.05] px-4 py-2.5">
+          <div className="border-t border-border-subtle px-4 py-2.5">
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setShowDiagnostics(!showDiagnostics);
               }}
-              className="flex items-center gap-1.5 text-[10px] text-zinc-500 transition-colors hover:text-zinc-300"
+              className="flex items-center gap-1.5 text-xs text-text-muted transition-colors hover:text-text-secondary"
             >
               <Activity className="size-2.5" />
               Developer Diagnostics
@@ -476,15 +476,15 @@ export default function ProviderSelector({ variant = "landing" }) {
                     <div key={diag.provider} className="space-y-1 border-b border-white/[0.03] pb-1.5 last:border-0 last:pb-0">
                       <div className="flex items-center gap-1.5">
                         <span className={`size-1.5 rounded-full ${statusCfg.color}`} />
-                        <span className="text-[10px] font-medium text-zinc-300">{diagTheme.name}</span>
+                        <span className="text-xs font-medium text-zinc-300">{diagTheme.name}</span>
                         <span className={`text-[9px] ${statusCfg.textColor}`}>{statusCfg.label}</span>
                       </div>
                       <div className="grid grid-cols-3 gap-1 text-[9px]">
-                        <div className="text-zinc-500">Model: <span className="text-zinc-400">{diag.currentModel}</span></div>
-                        <div className="text-zinc-500">RT: <span className="text-zinc-400">{diag.responseTime}ms</span></div>
-                        <div className="text-zinc-500">Reqs: <span className="text-zinc-400">{diag.requestCount}</span></div>
+                        <div className="text-zinc-400">Model: <span className="text-zinc-400">{diag.currentModel}</span></div>
+                        <div className="text-zinc-400">RT: <span className="text-zinc-400">{diag.responseTime}ms</span></div>
+                        <div className="text-zinc-400">Reqs: <span className="text-zinc-400">{diag.requestCount}</span></div>
                         {diag.lastError && (
-                          <div className="col-span-3 text-zinc-500">Error: <span className="text-red-400">{diag.lastError}</span></div>
+                          <div className="col-span-3 text-zinc-400">Error: <span className="text-red-400">{diag.lastError}</span></div>
                         )}
                       </div>
                     </div>

@@ -43,7 +43,7 @@ export default function DeleteConfirmationDialog({
       />
       <div
         ref={dialogRef}
-        className="relative w-full max-w-md rounded-2xl border border-white/[0.08] bg-[#12121a] p-6 shadow-2xl"
+        className="relative w-full max-w-md rounded-2xl border border-border-subtle dark:border-[rgba(139,92,246,0.12)] bg-surface-1 dark:bg-surface-2 p-6 shadow-2xl dark:shadow-[0_16px_64px_rgba(0,0,0,0.6)]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="delete-dialog-title"
@@ -51,7 +51,7 @@ export default function DeleteConfirmationDialog({
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-lg p-1 text-zinc-500 transition-colors hover:bg-white/[0.06] hover:text-zinc-300"
+          className="absolute right-4 top-4 rounded-lg p-1 text-text-muted transition-colors hover:bg-hover-surface hover:text-text-secondary"
           aria-label="Close"
         >
           <X className="size-4" />
@@ -59,16 +59,16 @@ export default function DeleteConfirmationDialog({
 
         <div className="flex items-start gap-4">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10">
-            <AlertTriangle className="size-5 text-red-400" />
+            <AlertTriangle className="size-5 text-red-500" />
           </div>
           <div className="min-w-0 flex-1">
             <h3
               id="delete-dialog-title"
-              className="text-sm font-semibold text-zinc-100"
+              className="text-sm font-semibold text-text-primary"
             >
               {title}
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+            <p className="mt-2 text-sm leading-relaxed text-text-muted">
               {description}
             </p>
           </div>
@@ -80,7 +80,7 @@ export default function DeleteConfirmationDialog({
             type="button"
             variant="ghost"
             onClick={onClose}
-            className="h-9 rounded-lg px-4 text-sm font-medium text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200"
+            className="h-9 rounded-lg px-4 text-sm font-medium text-text-muted hover:bg-hover-surface hover:text-text-primary"
           >
             {cancelText}
           </Button>

@@ -36,15 +36,15 @@ const componentIcons = {
 };
 
 const typeColors = {
-  root: "text-zinc-400",
-  container: "text-blue-400",
-  button: "text-emerald-400",
-  text: "text-zinc-300",
-  heading: "text-amber-400",
-  input: "text-cyan-400",
-  textarea: "text-cyan-400",
-  image: "text-pink-400",
-  card: "text-purple-400",
+  root: "text-text-muted",
+  container: "text-blue-500",
+  button: "text-emerald-500",
+  text: "text-text-secondary",
+  heading: "text-amber-500",
+  input: "text-cyan-500",
+  textarea: "text-cyan-500",
+  image: "text-pink-500",
+  card: "text-purple-500",
 };
 
 function SidebarSection({ title, defaultOpen = true, children }) {
@@ -55,7 +55,7 @@ function SidebarSection({ title, defaultOpen = true, children }) {
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="mb-1.5 flex w-full items-center gap-1 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500 transition-colors hover:text-zinc-300"
+        className="mb-1.5 flex w-full items-center gap-1 px-3 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted transition-colors hover:text-text-secondary"
       >
         <ChevronRight
           className={`size-3 shrink-0 transition-transform duration-200 ${
@@ -86,7 +86,7 @@ function ComponentTreeNode({
   const isNew = newIds.has(node.id);
   const staggerDelay = isNew && !reduced ? `${animIndex * 40}ms` : undefined;
   const hasChildren = (node.children?.length ?? 0) > 0;
-  const colorClass = typeColors[node.type] ?? "text-zinc-400";
+  const colorClass = typeColors[node.type] ?? "text-text-muted";
   const isCollapsed = collapsedIds.has(node.id);
 
   const wrapperStyle = isNew && !reduced
@@ -108,10 +108,10 @@ function ComponentTreeNode({
       <button
         type="button"
         onClick={() => setSelectedComponent(node.id)}
-        className={`group flex h-7 w-full items-center gap-1.5 rounded-md px-1.5 text-[11px] font-medium transition-all duration-150 ${
+        className={`group flex h-7 w-full items-center gap-1.5 rounded-md px-1.5 text-xs font-medium transition-all duration-150 ${
           isSelected
-            ? "bg-violet-500/[0.14] text-violet-200 shadow-[inset_0_0_0_1px_rgba(139,92,246,0.18)]"
-            : "text-zinc-500 hover:bg-white/[0.04] hover:text-zinc-300"
+            ? "bg-primary/10 text-primary shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.18)]"
+            : "text-text-secondary hover:bg-hover-surface hover:text-text-primary"
         }`}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
         tabIndex={0}
@@ -129,13 +129,13 @@ function ComponentTreeNode({
               e.stopPropagation();
               toggleCollapse(node.id);
             }}
-            className="mr-0.5 flex size-3 shrink-0 items-center justify-center rounded hover:bg-white/[0.08]"
+            className="mr-0.5 flex size-3 shrink-0 items-center justify-center rounded hover:bg-surface-3"
             tabIndex={-1}
           >
             <ChevronRight
               className={`size-3 transition-transform duration-150 ${
                 isCollapsed ? "" : "rotate-90"
-              } ${isLast ? "text-zinc-700" : "text-zinc-600"}`}
+              } ${isLast ? "text-text-muted" : "text-text-secondary"}`}
             />
           </span>
         ) : (
@@ -148,7 +148,7 @@ function ComponentTreeNode({
         <div className="relative">
           {depth > 0 && (
             <div
-              className="absolute bottom-0 top-0 w-px bg-white/[0.05]"
+              className="absolute bottom-0 top-0 w-px bg-border-subtle"
               style={{ left: `${depth * 16 + 14}px` }}
             />
           )}
@@ -215,7 +215,7 @@ export default function LeftSidebar() {
   );
 
   return (
-    <aside className="flex h-full w-full max-w-[16rem] flex-col border-r border-white/[0.05] bg-[#0a0a0e]/90 backdrop-blur-xl md:w-[16rem]">
+    <aside className="flex h-full w-full max-w-[16rem] flex-col border-r border-border-subtle bg-surface-0/90 transition-colors duration-300 dark:panel-glass dark:border-[rgba(139,92,246,0.08)] md:w-[16rem]">
       <div className="min-h-0 flex-1 overflow-y-auto px-2.5 py-4">
         <SidebarSection title="Components">
           <div className="space-y-0.5">
@@ -225,7 +225,7 @@ export default function LeftSidebar() {
                 type="button"
                 variant="ghost"
                 onClick={() => handleAddComponent(type)}
-                className="group h-8 w-full justify-start gap-2.5 rounded-lg px-2.5 text-xs font-normal text-zinc-400 transition-all duration-150 hover:bg-white/[0.06] hover:text-zinc-100"
+                className="group h-8 w-full justify-start gap-2.5 rounded-lg px-2.5 text-xs font-normal text-text-secondary transition-all duration-150 hover:bg-hover-surface hover:text-text-primary hover:translate-x-0.5 active:scale-[0.98]"
                 tabIndex={0}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
@@ -234,7 +234,7 @@ export default function LeftSidebar() {
                   }
                 }}
               >
-                <span className="flex size-5 items-center justify-center text-zinc-600 transition-colors duration-150 group-hover:text-violet-300">
+                <span className="flex size-5 items-center justify-center text-text-muted transition-colors duration-150 group-hover:text-primary">
                   <Icon className="size-3.5" strokeWidth={1.8} />
                 </span>
                 {name}
@@ -243,7 +243,7 @@ export default function LeftSidebar() {
           </div>
         </SidebarSection>
 
-        <div className="my-4 h-px bg-white/[0.05]" />
+        <div className="my-4 h-px bg-border-subtle" />
 
         <SidebarSection title="Component tree">
           <div>
@@ -265,13 +265,13 @@ export default function LeftSidebar() {
         </SidebarSection>
       </div>
 
-      <div className="border-t border-white/[0.05] p-3">
-        <div className="rounded-xl border border-white/[0.05] bg-white/[0.02] p-3">
+      <div className="border-t border-border-subtle p-3">
+        <div className="rounded-xl border border-border-subtle bg-surface-1 p-3">
           <div className="flex items-start gap-2.5">
-            <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md bg-violet-400/[0.08] text-violet-300">
+            <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md bg-primary/8 text-primary">
               <PanelTop className="size-3" />
             </span>
-            <p className="text-[11px] leading-5 text-zinc-500">
+            <p className="text-xs leading-5 text-text-muted">
               More components coming soon.
             </p>
           </div>

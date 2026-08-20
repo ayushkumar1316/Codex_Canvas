@@ -63,6 +63,11 @@ export async function executeAICommand(command) {
     const optimized = optimizePrompt(command.prompt, {
       hasImage: !!referenceImage?.preview,
       hasVoice: !!command.hasVoice,
+      context: {
+        componentTree: command.componentTree,
+        scope: command.selectedComponentId ? "component" : "page",
+        selectedComponentId: command.selectedComponentId,
+      },
     });
     devTimeEnd("Prompt Optimization");
     timings.promptOptimization = performance.now() - totalStart;
@@ -290,11 +295,23 @@ export async function executeAICommand(command) {
       };
     }
 
+    console.log("[EDIT-TRACE-V2] Point 4 - before validateResponse:", pipelineResult.patchedResponse?.operations?.map(op => ({
+      type: op.type,
+      targetId: op.targetId,
+      props: op.props,
+      styles: op.styles
+    })));
     const validation = validateResponse(pipelineResult.patchedResponse, {
       componentTree: command.componentTree,
       registry: command.registry ?? command.context?.registry ?? DEFAULT_REGISTRY,
       strategy: strategy.strategy,
     });
+    console.log("[EDIT-TRACE-V2] Point 5 - after validateResponse:", validation?.patch?.operations?.map(op => ({
+      type: op.type,
+      targetId: op.targetId,
+      props: op.props,
+      styles: op.styles
+    })));
 
     if (!validation.success) {
       const friendlyErrors = validation.errors.map((err) => {

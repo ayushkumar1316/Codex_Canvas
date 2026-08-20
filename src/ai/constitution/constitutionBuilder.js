@@ -2,10 +2,28 @@ import { coreRules } from "./coreRules";
 import { generationRules } from "./generationRules";
 import { editingRules } from "./editingRules";
 import { designSystemRules } from "./designSystemRules";
+import { modernDesignRules } from "./modernDesignRules";
 import { responsiveRules } from "./responsiveRules";
 import { componentBlueprintRules } from "./componentBlueprintRules";
 import { compositionRules } from "./compositionRules";
 import { styleRules } from "./styleRules";
+
+const MODERN_KEYWORDS = [
+  "modern", "dark", "dark mode", "dark theme", "night", "night mode",
+  "glassmorphism", "glass", "premium", "sleek", "futuristic",
+  "neon", "glow", "gradient", "bento", "minimal dark",
+  "linear", "vercel", "framer", "stripe", "raycast",
+  "saas landing", "tech startup", "ai website",
+];
+
+function detectModernIntent(prompt) {
+  if (!prompt) return false;
+  const lower = prompt.toLowerCase();
+  return MODERN_KEYWORDS.some((kw) => {
+    const pattern = new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
+    return pattern.test(lower);
+  });
+}
 
 const STYLE_KEYWORDS = [
   "modern", "minimal", "luxury", "premium", "glass", "glassmorphism",
@@ -54,11 +72,16 @@ export function buildConstitution(promptType, prompt, options = {}) {
 
   sections.push(coreRules);
 
+  const wantsModern = detectModernIntent(prompt);
+  if (wantsModern) {
+    sections.push(modernDesignRules);
+  }
+
   if (promptType === "generate") {
     sections.push(generationRules);
   }
 
-  if (promptType === "edit") {
+  if (promptType === "edit" || promptType === "insert") {
     sections.push(editingRules);
   }
 

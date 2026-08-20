@@ -67,10 +67,10 @@ export default function AutoResizeTextarea({
       disabled={disabled}
       placeholder={placeholder}
       rows={1}
-      className={`w-full min-h-[36px] max-h-[180px] resize-none border-0 bg-transparent px-0 pt-[9px] pb-[5px] text-[15px] leading-[1.6] outline-none placeholder:text-transparent disabled:opacity-50 ${className || "text-zinc-100"}`}
+      className={`w-full min-h-[36px] max-h-[180px] resize-none border-0 bg-transparent px-0 pt-[9px] pb-[5px] text-[15px] leading-[1.6] outline-none placeholder:text-transparent disabled:opacity-50 ${className || "text-text-primary"}`}
       style={{
         scrollbarWidth: "thin",
-        scrollbarColor: "rgba(255,255,255,0.1) transparent",
+        scrollbarColor: "var(--scrollbar-thumb) transparent",
         overflowY: "hidden",
       }}
       {...props}
