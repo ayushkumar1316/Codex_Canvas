@@ -73,7 +73,7 @@ export const PROVIDERS = {
     description: "Fastest · JSON",
     priority: 2,
     envKey: "VITE_GROQ_API_KEY",
-    defaultModel: "llama-3.3-70b-versatile",
+    defaultModel: "qwen/qwen3.6-27b",
     capabilities: ["jsonMode", "generation", "editing", "streaming"],
     performance: {
       speed: "fastest",
@@ -82,8 +82,10 @@ export const PROVIDERS = {
       recommendedFor: ["speed", "jsonMode", "editing"],
     },
     models: [
-      { id: "llama-3.3-70b-versatile", name: "Llama 3.3 70B" },
-      { id: "llama-3.1-8b-instant", name: "Llama 3.1 8B Instant" },
+      { id: "qwen/qwen3.6-27b", name: "Qwen 3.6 27B" },
+      { id: "openai/gpt-oss-120b", name: "GPT-OSS 120B" },
+      { id: "openai/gpt-oss-20b", name: "GPT-OSS 20B" },
+      { id: "allam-2-7b", name: "Allam 2 7B" },
     ],
   },
 

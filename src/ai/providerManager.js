@@ -84,9 +84,7 @@ function isFatalError(error) {
     msg.includes("invalid request") ||
     msg.includes("bad request") ||
     msg.includes("400") ||
-    msg.includes("unsupported") ||
-    msg.includes("not found") ||
-    msg.includes("404")
+    msg.includes("unsupported")
   );
 }
 
