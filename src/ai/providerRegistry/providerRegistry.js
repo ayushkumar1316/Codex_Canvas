@@ -124,37 +124,11 @@ export const PROVIDERS = {
       { id: "openai/gpt-oss-20b:free", name: "GPT-OSS 20B (Free)" },
     ],
   },
-
-  openai: {
-    id: "openai",
-    displayName: "OpenAI",
-    icon: "openai",
-    brandColor: "#10B981",
-    colorClass: "text-teal-400",
-    bg: "bg-teal-500/10",
-    border: "border-teal-500/20",
-    statusDot: "bg-teal-400",
-    description: "High-quality generation",
-    priority: 4,
-    envKey: "VITE_OPENAI_API_KEY",
-    defaultModel: "gpt-4o",
-    capabilities: ["vision", "voice", "jsonMode", "generation", "editing", "reasoning"],
-    performance: {
-      speed: "fast",
-      estimatedLatency: 1000,
-      contextWindow: 128_000,
-      recommendedFor: ["premium", "reasoning", "generation"],
-    },
-    models: [
-      { id: "gpt-4o", name: "GPT-4o" },
-      { id: "gpt-4o-mini", name: "GPT-4o Mini" },
-    ],
-  },
 };
 
-export const PROVIDER_LIST = ["gemini", "groq", "openrouter", "openai"];
+export const PROVIDER_LIST = ["gemini", "groq", "openrouter"];
 
-export const PROVIDER_PRIORITY = ["gemini", "groq", "openrouter", "openai"];
+export const PROVIDER_PRIORITY = ["gemini", "groq", "openrouter"];
 
 export function getProvider(id) {
   return PROVIDERS[id] || null;

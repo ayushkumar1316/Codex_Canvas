@@ -18,7 +18,6 @@ const providerLoaders = {
   gemini: () => import("./providers/gemini"),
   groq: () => import("./providers/groq"),
   openrouter: () => import("./providers/openrouter"),
-  openai: () => import("./providers/openai"),
 };
 
 const PROVIDER_MAP = {};
@@ -347,10 +346,6 @@ export async function testConnection(name) {
       testHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` };
     } else if (name === "openrouter") {
       testUrl = "https://openrouter.ai/api/v1/chat/completions";
-      testBody = JSON.stringify({ model: getProviderModel(name), messages: [{ role: "user", content: "Hi" }], max_tokens: 1 });
-      testHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` };
-    } else if (name === "openai") {
-      testUrl = "https://api.openai.com/v1/chat/completions";
       testBody = JSON.stringify({ model: getProviderModel(name), messages: [{ role: "user", content: "Hi" }], max_tokens: 1 });
       testHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` };
     } else {
