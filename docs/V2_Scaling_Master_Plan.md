@@ -39,7 +39,41 @@ We will transition from whole-page generations to hyper-targeted AST modificatio
 
 ---
 
-## 4. Implementation Phasing
+## 4. UI/UX Enhancement Strategy
+As we scale to V2, we must elevate the user experience to match the sophistication of our underlying architecture. The AI's capabilities should feel effortless, intuitive, and delightful to use.
+
+### 4.1 Visual Design & Polish
+- **Modern Design System Refresh:** Update component library with smoother animations, micro-interactions, and consistent spacing/scaling.
+- **Theme Refinement:** Improve dark/light mode contrast, add more theme options (auto, system, custom).
+- **Loading States:** Replace skeleton loaders with more engaging progress indicators that reflect streaming generation progress.
+- **Empty & Error States:** Design illustrative, helpful empty states and actionable error messages with recovery options.
+
+### 4.2 Interaction Patterns
+- **Conversational UI Evolution:** Transform the AI input pill into a more ChatGPT-like interface with message bubbles, streaming responses, and clear user/AI turn separation.
+- **Contextual Toolbars:** Show relevant editing tools (text styles, layout controls) when components are selected, reducing reliance on AI for simple tweaks.
+- **Gesture Support:** Add touch-friendly interactions for mobile/tablet users (pinch to zoom, drag to reposition, etc.).
+- **Keyboard Navigation:** Full keyboard accessibility with sensible tab order and shortcut hints.
+
+### 4.3 Feedback & Guidance
+- **Real-time Token/Usage Feedback:** Show estimated AI usage/costs during long operations to set expectations.
+- **Confidence Indicators:** Visual cues when the AI is uncertain about a request (e.g., dashed borders, suggestions to clarify).
+- **Before/After Sliders:** For significant changes, allow users to compare versions visually.
+- **Usage Tips & Examples:** Contextual help that suggests effective prompts based on current canvas state.
+
+### 4.4 Onboarding & Education
+- **Interactive Tutorial:** First-time user guided tour showing how to generate, edit, and refine designs.
+- **Prompt Library:** Curated examples of effective prompts organized by intent (layout changes, styling, component additions).
+- **Video Demos:** Short clips demonstrating complex workflows (e.g., "build a landing page from scratch").
+
+### 4.5 Accessibility & Inclusivity
+- **WCAG 2.1 AA Compliance:** Ensure all interactive elements meet accessibility standards.
+- **Screen Reader Support:** Proper ARIA labels and live regions for dynamic content updates.
+- **Reduced Motion Mode:** Respect user preferences for animation intensity.
+- **Color Blind Friendly Palettes:** Ensure color-coded indicators are distinguishable.
+
+---
+
+## 5. Implementation Phasing
 
 ### Phase 1: Foundation (Agentic Memory & Isolation)
 *Focus: Expanding the AI's brain.*
