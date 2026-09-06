@@ -21,8 +21,6 @@ export default function Editor() {
 
   const setAIPrompt = useAppStore((state) => state.setAIPrompt);
   const submitAICommand = useAppStore((state) => state.submitAICommand);
-  const componentTree = useAppStore((state) => state.componentTree);
-  const editorMode = useAppStore((state) => state.editorMode);
   const selectedComponentId = useAppStore((state) => state.selectedComponentId);
   const initializeWorkspace = useAppStore((state) => state.initializeWorkspace);
 
@@ -71,14 +69,12 @@ export default function Editor() {
           prompt: initialPrompt,
           scope: "page",
           selectedComponentId: null,
-          componentTree,
           registry: Object.keys(componentRegistry),
-          editorMode,
           referenceImage: initialImage || null,
         });
       }, 100);
     }
-  }, [location.state, setAIPrompt, submitAICommand, componentTree, editorMode, selectedComponentId]);
+  }, [location.state, setAIPrompt, submitAICommand, selectedComponentId]);
 
   useEffect(() => {
     const handleContextMenu = (event) => {

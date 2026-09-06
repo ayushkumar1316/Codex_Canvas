@@ -6,8 +6,10 @@ const SUPPORTED_OPERATION_TYPES = new Set([
   "updateProps", "updateStyles", "insertNode", "deleteNode", "replaceNode",
 ]);
 
-function generateId() {
-  return `repair_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+function generateId(type = "component") {
+  // Clean type to be URL-safe: only alphanumeric and hyphens
+  const cleanType = type ? String(type).toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') : 'component';
+  return `${cleanType}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
 function mapComponentType(type) {
@@ -84,7 +86,7 @@ function deduplicateIds(tree, seenIds = new Set()) {
   const result = { ...tree };
 
   if (result.id && seenIds.has(result.id)) {
-    result.id = generateId();
+    result.id = generateId(result.type);
   }
   if (result.id) {
     seenIds.add(result.id);
@@ -123,8 +125,8 @@ function fillMissingFields(node) {
 
   const result = { ...node };
 
-  if (!result.id) result.id = generateId();
   if (!result.type) result.type = "container";
+  if (!result.id) result.id = generateId(result.type);
   if (!result.props || typeof result.props !== "object") result.props = {};
   if (!result.styles || typeof result.styles !== "object") result.styles = {};
   if (!Array.isArray(result.children)) result.children = [];
@@ -144,10 +146,10 @@ function fillMissingFields(node) {
   return result;
 }
 
-function defaultNode() {
+function defaultNode(type = "container") {
   return {
-    id: generateId(),
-    type: "container",
+    id: generateId(type),
+    type,
     props: {},
     styles: {},
     children: [],
@@ -502,14 +504,16 @@ function convertCreateComponentToInsert(op) {
   const component = isObject(op.component) ? op.component : {};
   const node = isObject(op.node) ? op.node : {};
 
-  const nodeId = typeof node.id === "string" ? node.id
-    : typeof component.id === "string" ? component.id
-    : typeof op.id === "string" ? op.id
-    : generateId();
   const nodeType = typeof node.type === "string" ? node.type
     : typeof component.type === "string" ? component.type
     : typeof op.componentType === "string" ? op.componentType
     : "container";
+  const mappedType = mapComponentType(nodeType);
+
+  const nodeId = typeof node.id === "string" ? node.id
+    : typeof component.id === "string" ? component.id
+    : typeof op.id === "string" ? op.id
+    : generateId(mappedType);
   const parentId = typeof op.parentId === "string" ? op.parentId
     : typeof node.parentId === "string" ? node.parentId
     : typeof component.parentId === "string" ? component.parentId
@@ -540,7 +544,7 @@ function convertCreateComponentToInsert(op) {
     position,
     node: {
       id: nodeId,
-      type: mapComponentType(nodeType),
+      type: mappedType,
       props: nodeProps,
       styles: nodeStyles,
       children: nodeChildren.map(child => isComponentNode(child) ? normalizeRawNode(child) : child),
@@ -552,13 +556,14 @@ function convertCreateComponentToInsert(op) {
 
 function convertComponentToInsert(op) {
   const rootId = "root";
+  const mappedType = mapComponentType(op.type);
   return {
     type: "insertNode",
     parentId: rootId,
     position: "end",
     node: {
-      id: typeof op.id === "string" ? op.id : generateId(),
-      type: mapComponentType(op.type),
+      id: typeof op.id === "string" ? op.id : generateId(mappedType),
+      type: mappedType,
       props: isObject(op.props) ? op.props : {},
       styles: isObject(op.styles) ? op.styles : {},
       children: Array.isArray(op.children) ? op.children : [],
@@ -576,9 +581,10 @@ function isComponentNode(value) {
 
 function normalizeRawNode(node) {
   if (!node || typeof node !== "object") return node;
+  const mappedType = mapComponentType(node.type);
   const normalized = {
-    id: typeof node.id === "string" ? node.id : generateId(),
-    type: mapComponentType(node.type),
+    id: typeof node.id === "string" ? node.id : generateId(mappedType),
+    type: mappedType,
     props: isObject(node.props) ? node.props : {},
     styles: isObject(node.styles) ? node.styles : {},
     children: Array.isArray(node.children)
@@ -590,13 +596,14 @@ function normalizeRawNode(node) {
 
 function flattenTree(node, parentId, operations) {
   if (!isComponentNode(node)) return;
+  const mappedType = mapComponentType(node.type);
   operations.push({
     type: "insertNode",
     parentId,
     position: "end",
     node: {
-      id: typeof node.id === "string" ? node.id : generateId(),
-      type: mapComponentType(node.type),
+      id: typeof node.id === "string" ? node.id : generateId(mappedType),
+      type: mappedType,
       props: isObject(node.props) ? node.props : {},
       styles: isObject(node.styles) ? node.styles : {},
       children: [],
@@ -999,7 +1006,7 @@ function deduplicateOperationNodes(response, tree) {
     const result = { ...node };
     if (typeof result.id === "string") {
       if (seen.has(result.id)) {
-        result.id = generateId();
+        result.id = generateId(result.type);
       }
       seen.add(result.id);
     }

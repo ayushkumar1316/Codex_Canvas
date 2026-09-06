@@ -90,8 +90,11 @@ Internally execute this 6-step sequence for every request (Do NOT expose this re
 
 MINIMAL PATCH RULE & RESPONSE LIMITS:
 The response must contain only the minimum number of operations required. Never generate unnecessary operations.
-- Prefer updating existing components over replacing them (\`updateProps\` or \`updateStyles\` over \`replaceNode\`).
+- STRICTLY FORBIDDEN: NEVER use \`replaceNode\` on targetId "root" unless the user explicitly commands a complete wipe/reset of the whole page (e.g., "delete everything and start over").
+- ALWAYS prefer updating existing components over replacing them (\`updateProps\` or \`updateStyles\` over \`replaceNode\`).
+- NEVER replace a container if you only need to modify text, color, layout, or add/remove a child.
 - Prefer replacing over deleting and recreating (\`replaceNode\` over \`deleteNode\` + \`insertNode\`).
+- ALWAYS preserve the exact \`id\` values provided in the Current Component Tree context when specifying \`targetId\` or \`parentId\`. NEVER invent or modify existing IDs.
 - Large patches require explicit user intent. Never use a stronger operation when a weaker one is sufficient.
 - Never generate redundant operations. Never update the same property twice. Never update a node after deleting it.
 

@@ -95,13 +95,9 @@ export default function AIPill() {
       prompt,
       scope: selectedComponentId ? "component" : "page",
       selectedComponentId,
-      componentTree,
       registry: Object.keys(componentRegistry),
       timestamp: new Date().toISOString(),
-      editorMode,
-      aiProvider: aiProvider || "auto",
       hasVoice: usedVoice,
-      canvasState: computeCanvasState(componentTree),
       referenceImage: image
         ? { name: image.name, type: image.type, size: image.size, preview: image.preview }
         : null,

@@ -610,24 +610,24 @@ export const useAppStore = create(
       submitAICommand: async (command) => {
         if (get().aiLoading) return;
 
+        const currentState = get();
+        const liveTree = currentState.componentTree;
+        const liveCanvasState = (liveTree?.children?.length ?? 0) > 0 ? "COMPLETE" : "EMPTY";
+
         set((state) => {
           state._lastSubmitCommand = {
             timestamp: Date.now(),
             prompt: command.prompt,
-            componentTree: command.componentTree
-              ? JSON.parse(JSON.stringify(command.componentTree))
-              : null,
-            componentTreeChildCount: command.componentTree
-              ? countTreeChildren(command.componentTree)
-              : 0,
-            canvasState: command.canvasState,
+            componentTree: liveTree ? JSON.parse(JSON.stringify(liveTree)) : null,
+            componentTreeChildCount: countTreeChildren(liveTree),
+            canvasState: liveCanvasState,
           };
         });
 
-        const originCanvasId = get().activeCanvasId;
+        const originCanvasId = currentState.activeCanvasId;
 
         historyEngine.flushPendingSnapshot();
-        historyEngine.pushSnapshot(get().componentTree, "ai-generation");
+        historyEngine.pushSnapshot(liveTree, "ai-generation");
 
         set((state) => {
           state.aiLoading = true;
@@ -644,7 +644,15 @@ export const useAppStore = create(
         }, 800);
 
         try {
-          const result = await executeAICommand(command);
+          const fullCommand = {
+            ...command,
+            componentTree: liveTree,
+            editorMode: currentState.editorMode,
+            aiProvider: currentState.aiProvider || "auto",
+            canvasState: liveCanvasState,
+          };
+
+          const result = await executeAICommand(fullCommand);
 
           if (result.success && result.componentTree) {
             set((state) => {
