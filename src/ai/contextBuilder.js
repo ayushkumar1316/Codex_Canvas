@@ -68,8 +68,22 @@ export function buildContext({
   registry,
   userPrompt,
   referenceImage,
+  chatHistory = [],
+  lastTargetedNodeId = null,
 }) {
   const registryMetadata = getRegistryMetadata(registry);
+
+  // Extract sub-tree if selectedComponentId exists (sub-tree slicing for token efficiency)
+  let subtree = componentTree;
+  if (selectedComponentId) {
+    const selectedComponent = findComponentById(
+      componentTree,
+      selectedComponentId
+    );
+    if (selectedComponent) {
+      subtree = selectedComponent;
+    }
+  }
 
   if (!selectedComponentId) {
     return {
@@ -78,11 +92,16 @@ export function buildContext({
       parentComponent: null,
       siblingComponents: [],
       childComponents: [],
-      componentTree: cloneNode(componentTree),
+      componentTree: cloneNode(subtree),
       registry: registryMetadata,
       editorMode,
       userPrompt,
       referenceImage: referenceImage ?? null,
+      chatContext: {
+        hasHistory: chatHistory.length > 0,
+        recentMessages: chatHistory.slice(-3),
+        lastTargetedNodeId,
+      },
     };
   }
 
@@ -100,9 +119,15 @@ export function buildContext({
     parentComponent: cloneNode(parentComponent),
     siblingComponents: siblingComponents.map(cloneNode),
     childComponents: childComponents.map(cloneNode),
+    componentTree: cloneNode(subtree),
     registry: registryMetadata,
     editorMode,
     userPrompt,
     referenceImage: referenceImage ?? null,
+    chatContext: {
+      hasHistory: chatHistory.length > 0,
+      recentMessages: chatHistory.slice(-3),
+      lastTargetedNodeId,
+    },
   };
 }

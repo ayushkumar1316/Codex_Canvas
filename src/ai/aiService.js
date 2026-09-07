@@ -150,6 +150,8 @@ export async function executeAICommand(command) {
       registry: command.registry ?? command.context?.registry ?? DEFAULT_REGISTRY,
       userPrompt: effectivePrompt,
       referenceImage,
+      chatHistory: command.chatHistory ?? [],
+      lastTargetedNodeId: command.lastTargetedNodeId ?? null,
     });
     devTimeEnd("Context Building");
 

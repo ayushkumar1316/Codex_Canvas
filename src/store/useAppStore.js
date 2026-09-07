@@ -614,6 +614,12 @@ export const useAppStore = create(
         const liveTree = currentState.componentTree;
         const liveCanvasState = (liveTree?.children?.length ?? 0) > 0 ? "COMPLETE" : "EMPTY";
 
+        // Get chat history from useChatStore
+        const { useChatStore } = await import("./useChatStore");
+        const chatState = useChatStore.getState();
+        const chatHistory = chatState.messages.slice(-5);
+        const lastTargetedNodeId = chatState.lastTargetedNodeId;
+
         set((state) => {
           state._lastSubmitCommand = {
             timestamp: Date.now(),
@@ -650,6 +656,8 @@ export const useAppStore = create(
             editorMode: currentState.editorMode,
             aiProvider: currentState.aiProvider || "auto",
             canvasState: liveCanvasState,
+            chatHistory,
+            lastTargetedNodeId,
           };
 
           const result = await executeAICommand(fullCommand);
