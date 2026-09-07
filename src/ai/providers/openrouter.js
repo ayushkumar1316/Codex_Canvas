@@ -2,7 +2,7 @@ import { modelCatalog } from "../models/modelCatalog";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const DEFAULT_MAX_OUTPUT_TOKENS = 4096;
-const FETCH_TIMEOUT_MS = 90_000;
+const FETCH_TIMEOUT_MS = 30_000; // Reduced timeout for fast failure
 const IS_DEV = import.meta.env.DEV;
 
 function truncatePrompt(prompt, maxChars = 10000) {
@@ -17,6 +17,22 @@ function getOutputTokenBudget(modelId) {
     return catalogEntry.maxOutputTokens;
   }
   return DEFAULT_MAX_OUTPUT_TOKENS;
+}
+
+/**
+ * Quick check: does response look like JSON?
+ * Prevents wasting time on obviously wrong responses
+ */
+function isJsonLike(str) {
+  let trimmed = str.trim();
+
+  // Strip markdown code fences if present
+  if (trimmed.startsWith("```")) {
+    trimmed = trimmed.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+  }
+
+  // Must start with { or [ to be valid JSON
+  return trimmed.startsWith("{") || trimmed.startsWith("[");
 }
 
 export const openRouterProvider = {
@@ -85,6 +101,21 @@ export const openRouterProvider = {
     if (finishReason === "length" && IS_DEV) {
       console.warn(
         `[OpenRouter] Response truncated (finish_reason=length). Model: ${modelId}, budget: ${maxOutputTokens} tokens.`
+      );
+    }
+
+    // FAST FAIL: Check if response looks like JSON
+    // If not, fail immediately instead of wasting time on parsing
+    if (!isJsonLike(responseBody)) {
+      console.warn(
+        "[OpenRouter] Response does not look like JSON. Failing fast to use fallback provider."
+      );
+      console.warn(
+        "[OpenRouter] Response start:",
+        responseBody.substring(0, 100)
+      );
+      throw new Error(
+        "OpenRouter returned non-JSON response (likely reasoning text). Using fallback provider."
       );
     }
 

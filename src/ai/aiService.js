@@ -226,7 +226,7 @@ export async function executeAICommand(command) {
 
       // Check if streaming is enabled and provider supports it
       const supportsStreaming = resolved.primary.provider === "groq";
-      const useStreaming = supportsStreaming && command.enableStreaming !== false;
+      let useStreaming = supportsStreaming && command.enableStreaming !== false;
 
       if (useStreaming && command.onProgressUpdate) {
         // Use streaming for progressive rendering

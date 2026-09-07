@@ -42,7 +42,7 @@ export const PROVIDERS = {
     border: "border-emerald-500/20",
     statusDot: "bg-emerald-400",
     description: "Fast · Native Vision",
-    priority: 1,
+    priority: 2,
     envKey: "VITE_GEMINI_API_KEY",
     defaultModel: "gemini-3.6-flash",
     capabilities: ["vision", "voice", "streaming", "jsonMode", "generation", "editing"],
@@ -71,7 +71,7 @@ export const PROVIDERS = {
     border: "border-orange-500/20",
     statusDot: "bg-orange-400",
     description: "Fastest · JSON",
-    priority: 2,
+    priority: 1,
     envKey: "VITE_GROQ_API_KEY",
     defaultModel: "qwen/qwen3.6-27b",
     capabilities: ["jsonMode", "generation", "editing", "streaming"],
@@ -126,9 +126,10 @@ export const PROVIDERS = {
   },
 };
 
-export const PROVIDER_LIST = ["gemini", "groq", "openrouter"];
+// Priority order: Groq first (most reliable JSON), then Gemini, OpenRouter last (unreliable)
+export const PROVIDER_LIST = ["groq", "gemini", "openrouter"];
 
-export const PROVIDER_PRIORITY = ["gemini", "groq", "openrouter"];
+export const PROVIDER_PRIORITY = ["groq", "gemini", "openrouter"];
 
 export function getProvider(id) {
   return PROVIDERS[id] || null;
