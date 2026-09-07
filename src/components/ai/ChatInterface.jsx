@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X, MessageCircle, Send, Sparkles } from "lucide-react";
 import { useChatContext } from "@/hooks/useChatContext";
 import { useAppStore } from "@/store/useAppStore";
+import { componentRegistry } from "@/registry/componentRegistry";
 
 /**
  * Conversational Chat Interface
@@ -11,13 +12,33 @@ export function ChatInterface() {
   const [isOpen, setIsOpen] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const messages = useChatContext().messages || [];
-  const { addUserMessage } = useChatContext();
+  const { addUserMessage, updateTargetedNode } = useChatContext();
   const aiPhase = useAppStore((state) => state.aiPhase);
+  const aiLoading = useAppStore((state) => state.aiLoading);
   const streamingProgress = useAppStore((state) => state.streamingProgress);
+  const submitAICommand = useAppStore((state) => state.submitAICommand);
+  const selectedComponentId = useAppStore((state) => state.selectedComponentId);
 
   const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
-    addUserMessage(newMessage);
+    if (!newMessage.trim() || aiLoading) return;
+
+    addUserMessage(newMessage, {
+      selectedComponentId,
+      scope: selectedComponentId ? "component" : "page",
+    });
+
+    if (selectedComponentId) {
+      updateTargetedNode(selectedComponentId, "component");
+    }
+
+    submitAICommand({
+      prompt: newMessage,
+      scope: selectedComponentId ? "component" : "page",
+      selectedComponentId,
+      registry: Object.keys(componentRegistry),
+      timestamp: new Date().toISOString(),
+    });
+
     setNewMessage("");
   };
 
@@ -83,13 +104,13 @@ export function ChatInterface() {
           ))
         )}
 
-        {aiPhase === "understanding" || aiPhase === "planning" ? (
+        {(aiPhase === "understanding" || aiPhase === "planning" || aiPhase === "applying") && (
           <div className="flex gap-1">
             <div className="size-2 animate-bounce rounded-full bg-primary [animation-delay:0ms]" />
             <div className="size-2 animate-bounce rounded-full bg-primary [animation-delay:150ms]" />
             <div className="size-2 animate-bounce rounded-full bg-primary [animation-delay:300ms]" />
           </div>
-        ) : null}
+        )}
 
         {streamingProgress?.status === "streaming" && (
           <div className="text-xs text-text-muted">
@@ -107,11 +128,13 @@ export function ChatInterface() {
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask for changes..."
-            className="flex-1 rounded-lg border border-border-subtle bg-surface-0 px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary/50 focus:outline-none"
+            disabled={aiLoading}
+            className="flex-1 rounded-lg border border-border-subtle bg-surface-0 px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary/50 focus:outline-none disabled:opacity-50"
           />
           <button
             onClick={handleSendMessage}
-            className="rounded-lg bg-primary/20 p-2 transition-colors hover:bg-primary/30"
+            disabled={aiLoading || !newMessage.trim()}
+            className="rounded-lg bg-primary/20 p-2 transition-colors hover:bg-primary/30 disabled:opacity-50"
           >
             <Send className="size-4 text-primary" />
           </button>

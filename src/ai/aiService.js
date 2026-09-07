@@ -180,6 +180,7 @@ export async function executeAICommand(command) {
     const capabilityResult = resolveCapability({
       capability: capabilityId,
       ...capabilityConstraints,
+      preferredProvider: command.aiProvider !== "auto" ? command.aiProvider : null,
     });
     devTimeEnd("Capability Resolution");
 
@@ -239,6 +240,21 @@ export async function executeAICommand(command) {
             },
             command.onProgressUpdate
           );
+          // Streaming handler already applied operations via onProgressUpdate callback.
+          // Skip repair pipeline — return success directly with the already-applied tree.
+          if (fallbackResult.success && fallbackResult.componentTree) {
+            devTimeEnd("Provider Selection + API Call");
+            const totalEnd = performance.now();
+            timings.total = totalEnd - totalStart;
+            return {
+              success: true,
+              componentTree: fallbackResult.componentTree,
+              error: null,
+              provider: resolved.primary.provider,
+              operationCount: fallbackResult.operationCount,
+              performance: timings,
+            };
+          }
         }
       }
 

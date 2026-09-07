@@ -650,6 +650,14 @@ export const useAppStore = create(
           });
         }, 800);
 
+        setTimeout(() => {
+          set((state) => {
+            if (state.aiPhase === "planning") {
+              state.aiPhase = "applying";
+            }
+          });
+        }, 2000);
+
         try {
           const fullCommand = {
             ...command,
@@ -682,11 +690,15 @@ export const useAppStore = create(
             // Log assistant response to chat history
             const { useChatStore } = await import("./useChatStore");
             const chatState = useChatStore.getState();
+            const opCount = result.operationCount ?? result.validation?.applied ?? 0;
+            const strategyLabel = result.strategy?.type === "FULL_GENERATION" ? "Generated" : "Updated";
             chatState.addMessage({
               role: "assistant",
-              content: `Applied ${result.validation?.errors || 0} patches successfully`,
+              content: opCount > 0
+                ? `${strategyLabel} ${opCount} component${opCount !== 1 ? "s" : ""} successfully`
+                : "No changes needed — canvas is up to date",
               metadata: {
-                operationsCount: result.validation?.errors ?? 0,
+                operationsCount: opCount,
                 strategy: result.strategy?.type,
                 provider: result.provider,
               },
@@ -698,6 +710,7 @@ export const useAppStore = create(
               state.aiError = null;
               state.componentTree = result.componentTree;
               state.aiPrompt = "";
+              state.streamingProgress = null;
               state.canUndo = historyEngine.canUndo();
               state.canRedo = historyEngine.canRedo();
 
@@ -728,6 +741,7 @@ export const useAppStore = create(
               state.aiLoading = false;
               state.aiError = result.error ?? { type: "empty", message: "AI returned empty component tree" };
               state.aiPhase = "error";
+              state.streamingProgress = null;
             });
           }
         } catch (error) {
@@ -738,6 +752,7 @@ export const useAppStore = create(
               message: error.message ?? "Unexpected error",
             };
             state.aiPhase = "error";
+            state.streamingProgress = null;
           });
         }
       },
