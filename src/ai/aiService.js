@@ -223,12 +223,52 @@ export async function executeAICommand(command) {
       fallbackResult = cachedResponse;
     } else if (capabilityResult.success && resolved?.primary) {
       console.log("[Pipeline] executeWithResolution called with primary:", resolved.primary, "fallbacks:", resolved.fallbacks?.length || 0);
-      fallbackResult = await executeWithResolution(resolved, {
-        systemPrompt: constitution || SYSTEM_PROMPT,
-        context,
-        userPrompt: effectivePrompt,
-        schema: aiPatchSchema,
-      });
+
+      // Check if streaming is enabled and provider supports it
+      const supportsStreaming = resolved.primary.provider === "groq";
+      const useStreaming = supportsStreaming && command.enableStreaming !== false;
+
+      if (useStreaming && command.onProgressUpdate) {
+        // Use streaming for progressive rendering
+        const { executeStreamingCall } = await import("./streamingHandler");
+
+        let providerModule;
+        if (resolved.primary.provider === "groq") {
+          providerModule = await import("./providers/groq");
+        } else if (resolved.primary.provider === "gemini") {
+          providerModule = await import("./providers/gemini");
+        } else if (resolved.primary.provider === "openrouter") {
+          providerModule = await import("./providers/openrouter");
+        } else {
+          // Fallback to non-streaming
+          useStreaming = false;
+        }
+
+        if (useStreaming && providerModule) {
+          fallbackResult = await executeStreamingCall(
+            providerModule.default,
+            {
+              systemPrompt: constitution || SYSTEM_PROMPT,
+              context,
+              userPrompt: effectivePrompt,
+              schema: aiPatchSchema,
+              model: resolved.primary.model,
+            },
+            command.onProgressUpdate
+          );
+        }
+      }
+
+      if (!useStreaming || !command.onProgressUpdate) {
+        // Use standard non-streaming call
+        fallbackResult = await executeWithResolution(resolved, {
+          systemPrompt: constitution || SYSTEM_PROMPT,
+          context,
+          userPrompt: effectivePrompt,
+          schema: aiPatchSchema,
+        });
+      }
+
       console.log("[Pipeline] executeWithResolution returned:", { success: fallbackResult.success, provider: fallbackResult.provider });
       if (fallbackResult.success) {
         responseCache.set(

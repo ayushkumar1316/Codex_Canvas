@@ -5,6 +5,7 @@ import RightPanel from "@/editor/RightPanel";
 import AIPill from "@/components/ai/AIPill";
 import AITimeline from "@/components/ai/AITimeline";
 import SuccessToast from "@/components/ai/SuccessToast";
+import StreamingProgress from "@/components/ai/StreamingProgress";
 import { useAppStore } from "@/store/useAppStore";
 
 export default function Layout() {
@@ -32,6 +33,7 @@ export default function Layout() {
       <AIPill />
       <AITimeline />
       <SuccessToast />
+      <StreamingProgress />
     </div>
   );
 }

@@ -219,6 +219,7 @@ export const useAppStore = create(
       aiProvider: "auto",
       aiModel: null,
       aiActiveProvider: null,
+      streamingProgress: null,
 
       providerHealth: {},
       providerPriority: ["gemini", "groq", "openrouter", "openai"],
@@ -658,6 +659,21 @@ export const useAppStore = create(
             canvasState: liveCanvasState,
             chatHistory,
             lastTargetedNodeId,
+            enableStreaming: true,
+            onProgressUpdate: (progress) => {
+              // Update streaming progress in real-time
+              set((state) => {
+                state.componentTree = progress.tree;
+                state.streamingProgress = {
+                  operationCount: progress.operationCount,
+                  status: progress.status,
+                  lastOperation: progress.lastOperation,
+                };
+                state.canUndo = historyEngine.canUndo();
+                state.canRedo = historyEngine.canRedo();
+                saveCanvasById(state);
+              });
+            },
           };
 
           const result = await executeAICommand(fullCommand);
