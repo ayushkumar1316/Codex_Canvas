@@ -806,6 +806,11 @@ function normalizeRawOperation(op) {
     op.targetId = typeof op.id === "string" ? op.id : "root";
     delete op.id;
   }
+
+  if (op.componentId && !op.targetId && op.type !== "insertNode") {
+    op.targetId = typeof op.componentId === "string" ? op.componentId : "root";
+    delete op.componentId;
+  }
 }
 
 function fillOperationDefaults(response) {
@@ -1144,7 +1149,7 @@ export function repairResponse(response, validationErrors, context = {}) {
   } else if (result && typeof result === "object" && !Array.isArray(result) && !result.operations) {
     const opType = result.operation || result.type;
     const hasContent = isObject(result.styles) || isObject(result.props) || result.node || result.component;
-    const targetId = result.nodeId || result.targetId || result.id || result.target;
+    const targetId = result.componentId || result.nodeId || result.targetId || result.id || result.target;
 
     if (typeof opType === "string" && hasContent) {
       const op = {
@@ -1167,7 +1172,7 @@ export function repairResponse(response, validationErrors, context = {}) {
     const ops = result.operation.map((op) => {
       if (!op || typeof op !== "object") return op;
       const opType = op.operation || op.type;
-      const tid = op.nodeId || op.targetId || op.id || op.target;
+      const tid = op.componentId || op.nodeId || op.targetId || op.id || op.target;
       const out = { type: opType };
       if (tid) out.targetId = tid;
       if (isObject(op.styles)) out.styles = op.styles;

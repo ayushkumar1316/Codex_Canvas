@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import {
   Code2,
   Copy,
@@ -55,6 +56,21 @@ export default function Header() {
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+
+  const closeAllMenus = useCallback(() => {
+    setShowContextMenu(false);
+    setShowExportMenu(false);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        closeAllMenus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [closeAllMenus]);
 
   const activeCanvas = canvases.find((c) => c.id === activeCanvasId);
   const canvasName = activeCanvas?.name || "Untitled Canvas";
@@ -240,11 +256,14 @@ export default function Header() {
               </button>
               {showExportMenu && (
                 <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setShowExportMenu(false)}
-                  />
-                  <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl border border-border-subtle dark:border-[rgba(139,92,246,0.12)] bg-surface-1 dark:bg-surface-2 p-1 shadow-xl dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+                  {createPortal(
+                    <div
+                      className="fixed inset-0 z-[9998]"
+                      onClick={() => setShowExportMenu(false)}
+                    />,
+                    document.body
+                  )}
+                  <div className="absolute right-0 top-full z-[9999] mt-1 w-48 rounded-xl border border-border-subtle dark:border-[rgba(139,92,246,0.12)] bg-surface-1 dark:bg-surface-2 p-1 shadow-xl dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
                     <button type="button" onClick={handleExportJSON} className={menuItem} aria-label="Export as JSON">
                       <FileJson className="size-3.5" />
                       Export JSON
@@ -287,11 +306,14 @@ export default function Header() {
               </button>
               {showContextMenu && (
                 <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setShowContextMenu(false)}
-                  />
-                  <div className="absolute right-0 top-full z-50 mt-1 w-40 rounded-xl border border-border-subtle bg-surface-1 p-1 shadow-xl">
+                  {createPortal(
+                    <div
+                      className="fixed inset-0 z-[9998]"
+                      onClick={() => setShowContextMenu(false)}
+                    />,
+                    document.body
+                  )}
+                  <div className="absolute right-0 top-full z-[9999] mt-1 w-40 rounded-xl border border-border-subtle bg-surface-1 p-1 shadow-xl">
                     <button type="button" onClick={handleStartRename} className={menuItem} aria-label="Rename canvas">
                       <SquarePen className="size-3.5" />
                       Rename

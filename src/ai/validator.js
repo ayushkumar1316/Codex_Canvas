@@ -878,6 +878,11 @@ function normalizeOperation(op) {
     delete normalized.nodeId;
   }
 
+  if (normalized.componentId !== undefined && !normalized.targetId) {
+    normalized.targetId = resolveNodeRef(normalized.componentId);
+    delete normalized.componentId;
+  }
+
   if (typeof normalized.operation === "string" && !normalized.type) {
     normalized.type = normalized.operation;
     delete normalized.operation;
