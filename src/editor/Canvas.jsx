@@ -6,6 +6,7 @@ import { getDeviceWidth } from "@/components/ui/DevicePreview";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import Renderer from "@/renderer/Renderer";
 import EmptyState from "@/editor/EmptyState";
+import { InlineAIModifier } from "@/components/ui/InlineAIModifier";
 
 const DEVICE_FRAME_COLORS = {
   tablet: "border-border-default",
@@ -119,6 +120,8 @@ export default function Canvas() {
           </div>
         )}
       </div>
+
+      <InlineAIModifier />
     </main>
   );
 }
