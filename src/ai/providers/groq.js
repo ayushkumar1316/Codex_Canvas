@@ -87,6 +87,111 @@ export const groqProvider = {
 
     return parsed;
   },
+
+  /**
+   * Stream variant for progressive rendering
+   * Emits operations as they arrive from the stream
+   */
+  async executeStream({ systemPrompt, context, userPrompt, schema, model: resolvedModel, onOperation }) {
+    const content = [
+      {
+        type: "text",
+        text: JSON.stringify({
+          context,
+          userPrompt,
+        }),
+      },
+    ];
+
+    const refImage = context?.referenceImage;
+    if (refImage?.preview) {
+      content.push({
+        type: "image_url",
+        image_url: { url: refImage.preview },
+      });
+    }
+
+    const body = {
+      model: resolvedModel || import.meta.env.VITE_GROQ_MODEL || "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: truncatePrompt(systemPrompt) },
+        { role: "user", content },
+      ],
+      temperature: 0.1,
+      max_tokens: 8192,
+      stream: true,
+    };
+
+    if (schema) {
+      body.response_format = { type: "json_object" };
+    }
+
+    const response = await fetch(GROQ_API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage =
+        errorData?.error?.message || errorData?.error || `API error ${response.status}`;
+      throw new Error(errorMessage);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete SSE lines
+        const lines = buffer.split("\n");
+        buffer = lines[lines.length - 1]; // Keep incomplete line
+
+        for (let i = 0; i < lines.length - 1; i++) {
+          const line = lines[i].trim();
+
+          if (!line || line.startsWith(":")) continue; // Skip empty/comment lines
+
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6);
+
+            if (data === "[DONE]") {
+              console.log("[Groq Stream] Stream complete");
+              continue;
+            }
+
+            try {
+              const event = JSON.parse(data);
+              const content = event?.choices?.[0]?.delta?.content || "";
+
+              if (content) {
+                // Accumulate content and try to parse operations
+                if (onOperation) {
+                  onOperation({ chunk: content, type: "delta" });
+                }
+              }
+            } catch (e) {
+              console.error("[Groq Stream] Failed to parse SSE event:", e);
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  },
 };
 
 export default groqProvider;
