@@ -6,6 +6,9 @@ import AIPill from "@/components/ai/AIPill";
 import AITimeline from "@/components/ai/AITimeline";
 import SuccessToast from "@/components/ai/SuccessToast";
 import StreamingProgress from "@/components/ai/StreamingProgress";
+import ChatInterface from "@/components/ai/ChatInterface";
+import FeedbackIndicators from "@/components/ai/FeedbackIndicators";
+import InteractiveTutorial from "@/components/onboarding/InteractiveTutorial";
 import { useAppStore } from "@/store/useAppStore";
 
 export default function Layout() {
@@ -34,6 +37,9 @@ export default function Layout() {
       <AITimeline />
       <SuccessToast />
       <StreamingProgress />
+      <ChatInterface />
+      <FeedbackIndicators />
+      <InteractiveTutorial />
     </div>
   );
 }
