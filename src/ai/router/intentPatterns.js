@@ -152,7 +152,6 @@ export const INTENT_PATTERNS = {
 
 export const INTENT_PRIORITY = [
   "image",
-  "voice",
   "generate",
   "delete",
   "insert",
@@ -174,13 +173,3 @@ export const OPERATION_MAP = {
   voice: ["updateProps", "updateStyles"],
   unknown: ["updateProps"],
 };
-
-export const FUTURE_INTENTS = [
-  "animation",
-  "responsive",
-  "accessibility",
-  "performance",
-  "export",
-  "theme",
-  "ai_repair",
-];

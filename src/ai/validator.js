@@ -835,8 +835,9 @@ function convertJsonPatchOpFields(op) {
   const result = { ...op };
   delete result.path;
 
+  // Skip operations with no real target — fake targetIds like "node-0" will never match real nodes
   if (childIndex !== null && !result.targetId) {
-    result.targetId = `node-${childIndex}`;
+    result.targetId = null;
   }
 
   if (propType && propKey && "value" in result) {
@@ -870,7 +871,6 @@ function resolveNodeRef(ref) {
 }
 
 function normalizeOperation(op) {
-  console.log("[EDIT-TRACE-V2] normalizeOperation INPUT:", { type: op?.type, targetId: op?.targetId, props: op?.props, styles: op?.styles });
   const normalized = { ...op };
 
   if (normalized.nodeId !== undefined) {
@@ -1021,11 +1021,9 @@ function normalizeOperation(op) {
         clean[key] = normalized[key];
       }
     }
-    console.log("[EDIT-TRACE-V2] normalizeOperation OUTPUT (clean):", { type: clean?.type, targetId: clean?.targetId, props: clean?.props, styles: clean?.styles });
     return clean;
   }
 
-  console.log("[EDIT-TRACE-V2] normalizeOperation OUTPUT (fallback):", { type: normalized?.type, targetId: normalized?.targetId, props: normalized?.props, styles: normalized?.styles });
   return normalized;
 }
 
@@ -1087,15 +1085,12 @@ function normalizeResponse(response) {
 export function validateResponse(response, { componentTree, registry, strategy } = {}) {
   const normalized = normalizeResponse(response);
 
-  console.log("[Validator] validateResponse - normalized operations:", normalized?.operations?.length, "types:", normalized?.operations?.map(op => op?.type));
-
   const errors = [
     ...validateSchema(normalized),
     ...validateBusinessRules(normalized),
   ];
 
   if (errors.length > 0) {
-    console.log("[Validator] Schema/business errors:", errors.map(e => `${e.kind}: ${e.message}`));
     return {
       success: false,
       patch: null,
@@ -1105,19 +1100,11 @@ export function validateResponse(response, { componentTree, registry, strategy }
 
   if (registry) {
     const registryErrors = validateRegistry(normalized, registry);
-    if (registryErrors.length > 0) {
-      console.log("[Validator] Registry errors:", registryErrors.map(e => `${e.kind}: ${e.message}`));
-    }
     errors.push(...registryErrors);
   }
 
   const patchErrors = validatePatch(normalized, componentTree, strategy);
-  if (patchErrors.length > 0) {
-    console.log("[Validator] Patch errors:", patchErrors.map(e => `${e.kind}: ${e.message}`));
-  }
   errors.push(...patchErrors);
-
-  console.log("[Validator] Final result:", { success: errors.length === 0, errorsCount: errors.length });
 
   return {
     success: errors.length === 0,

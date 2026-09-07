@@ -13,5 +13,4 @@ export {
   INTENT_PATTERNS,
   INTENT_PRIORITY,
   OPERATION_MAP,
-  FUTURE_INTENTS,
 } from "./intentPatterns";

@@ -33,7 +33,7 @@ export function isModelDeprecated(model) {
 }
 
 export function isModelUnavailable(model) {
-  return model.availability === Availability.VOLATILE;
+  return model.availability === Availability.VOLATILE || model.availability === Availability.LOW;
 }
 
 export function modelHasRequiredFeatures(model, requiredFeatures) {

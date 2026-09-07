@@ -34,6 +34,7 @@ export default function Canvas() {
     if (prevPhaseRef.current === "processing" && aiPhase === "success" && !reduced) {
       setShowRipple(true);
       const timer = setTimeout(() => setShowRipple(false), 500);
+      prevPhaseRef.current = aiPhase;
       return () => clearTimeout(timer);
     }
     prevPhaseRef.current = aiPhase;
@@ -96,7 +97,7 @@ export default function Canvas() {
                 </div>
               )}
               <div
-                className="bg-white"
+                className="bg-surface-0"
                 style={hasDeviceFrame ? { minHeight: deviceWidth === 375 ? 667 : deviceWidth === 768 ? 1024 : 400 } : undefined}
               >
                 <Renderer tree={componentTree} newIds={newIds} />

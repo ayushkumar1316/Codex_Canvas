@@ -47,6 +47,8 @@ export const Capability = Object.freeze({
 
 export const ProviderType = Object.freeze({
   OPENROUTER: "openrouter",
+  GEMINI: "gemini",
+  GROQ: "groq",
   DIRECT: "direct",
   CUSTOM: "custom",
 });

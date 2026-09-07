@@ -2,7 +2,7 @@ import { modelCatalog } from "../models/modelCatalog";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const DEFAULT_MAX_OUTPUT_TOKENS = 4096;
-const FETCH_TIMEOUT_MS = 30_000; // Reduced timeout for fast failure
+const FETCH_TIMEOUT_MS = 90_000;
 const IS_DEV = import.meta.env.DEV;
 
 function truncatePrompt(prompt, maxChars = 10000) {

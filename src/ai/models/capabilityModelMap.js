@@ -264,7 +264,7 @@ const CAPABILITY_MAPPINGS = Object.freeze({
     ],
     emergency: [
       {
-        modelId: "gemini-2.5-flash",
+        modelId: "gemini-3.6-flash",
         reason: "Vision + reasoning, 1M context",
         confidence: 0.72,
       },
@@ -347,7 +347,7 @@ const CAPABILITY_MAPPINGS = Object.freeze({
         confidence: 0.85,
       },
       {
-        modelId: "gemini-2.5-flash",
+        modelId: "gemini-3.6-flash",
         reason: "Reasoning capable, 1M context, fast",
         confidence: 0.80,
       },

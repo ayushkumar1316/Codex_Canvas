@@ -1,5 +1,4 @@
 import { SYSTEM_PROMPT } from "./systemPrompt";
-import { validateResponse } from "./validator";
 import { buildContext } from "./contextBuilder";
 import aiPatchSchema from "./patchSchema";
 import { executeWithFallback, executeWithResolution } from "./providerManager";
@@ -206,10 +205,8 @@ export async function executeAICommand(command) {
       devLog("Cache Hit", { provider: cachedResponse.provider });
       fallbackResult = cachedResponse;
     } else if (capabilityResult.success && resolved?.primary) {
-      console.log("[Pipeline] executeWithResolution called with primary:", resolved.primary, "fallbacks:", resolved.fallbacks?.length || 0);
-
       // Check if streaming is enabled and provider supports it
-      const supportsStreaming = resolved.primary.provider === "groq";
+      const supportsStreaming = ["groq", "gemini", "openrouter"].includes(resolved.primary.provider);
       let useStreaming = supportsStreaming && command.enableStreaming !== false;
 
       if (useStreaming && command.onProgressUpdate) {
@@ -255,20 +252,19 @@ export async function executeAICommand(command) {
               performance: timings,
             };
           }
+          // Streaming failed or returned empty — fall through to non-streaming
+          devLog("Streaming unavailable, falling back to standard call", { provider: resolved.primary.provider });
         }
       }
 
-      if (!useStreaming || !command.onProgressUpdate) {
-        // Use standard non-streaming call
-        fallbackResult = await executeWithResolution(resolved, {
-          systemPrompt: constitution || SYSTEM_PROMPT,
-          context,
-          userPrompt: effectivePrompt,
-          schema: aiPatchSchema,
-        });
-      }
+      // Standard non-streaming call
+      fallbackResult = await executeWithResolution(resolved, {
+        systemPrompt: constitution || SYSTEM_PROMPT,
+        context,
+        userPrompt: effectivePrompt,
+        schema: aiPatchSchema,
+      });
 
-      console.log("[Pipeline] executeWithResolution returned:", { success: fallbackResult.success, provider: fallbackResult.provider });
       if (fallbackResult.success) {
         responseCache.set(
           effectivePrompt,
@@ -278,7 +274,6 @@ export async function executeAICommand(command) {
         );
       }
     } else {
-      console.log("[Pipeline] executeWithFallback called (resolution skipped)");
       fallbackResult = await executeWithFallback({
         systemPrompt: constitution || SYSTEM_PROMPT,
         context,
@@ -339,45 +334,8 @@ export async function executeAICommand(command) {
       };
     }
 
-    console.log("[EDIT-TRACE-V2] Point 4 - before validateResponse:", pipelineResult.patchedResponse?.operations?.map(op => ({
-      type: op.type,
-      targetId: op.targetId,
-      props: op.props,
-      styles: op.styles
-    })));
-    const validation = validateResponse(pipelineResult.patchedResponse, {
-      componentTree: command.componentTree,
-      registry: command.registry ?? command.context?.registry ?? DEFAULT_REGISTRY,
-      strategy: strategy.strategy,
-    });
-    console.log("[EDIT-TRACE-V2] Point 5 - after validateResponse:", validation?.patch?.operations?.map(op => ({
-      type: op.type,
-      targetId: op.targetId,
-      props: op.props,
-      styles: op.styles
-    })));
-
-    if (!validation.success) {
-      const friendlyErrors = validation.errors.map((err) => {
-        if (err.kind === "patch-target-missing") return `Target not found: ${err.message}`;
-        if (err.kind === "patch-parent-missing") return `Parent not found: ${err.message}`;
-        if (err.kind === "response-extra-key") return `Unexpected field: ${err.message}`;
-        if (err.kind === "op-type-unsupported") return `Unknown operation: ${err.message}`;
-        if (err.kind === "node-type-unsupported") return `Unknown component type: ${err.message}`;
-        if (err.kind === "registry-type-unregistered") return `Unregistered type: ${err.message}`;
-        if (err.kind === "patch-cannot-delete-root") return `Cannot delete root`;
-        if (err.kind === "patch-duplicate-update") return `Duplicate update: ${err.message}`;
-        return err.message || err.kind || "Unknown error";
-      });
-      return {
-        success: false,
-        componentTree: null,
-        error: {
-          type: "validation",
-          message: friendlyErrors.join(" | ") || "Response format was invalid",
-        },
-      };
-    }
+    // Use the already-validated patched response from the repair pipeline
+    const validation = { success: true, patch: pipelineResult.patchedResponse, errors: [] };
 
     devTime("Completion Pass");
     const patchDiagnostics = applyJsonPatchWithDiagnostics(command.componentTree, validation.patch);
@@ -480,7 +438,7 @@ export async function executeAICommand(command) {
         score: pipelineResult.score,
         errors: (pipelineResult.errors || []).length,
         warnings: (pipelineResult.warnings || []).length,
-        repairRequired: false,
+        repairRequired: pipelineResult.repaired || false,
         repaired: pipelineResult.repaired || false,
         repairLevel: pipelineResult.repairLevel || null,
         repairedFields: pipelineResult.repairedFields || [],

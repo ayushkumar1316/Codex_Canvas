@@ -84,19 +84,6 @@ export function getRecommendedProvider(strategy, complexity, providerCapabilitie
   return scored[0]?.provider || "gemini";
 }
 
-export function getStrategyDecisionFactors() {
-  return {
-    intent: "Type of operation (generate, edit, insert, delete, style, etc.)",
-    canvasState: "Current state of the canvas (EMPTY, has components)",
-    providerMode: "Auto or Manual provider selection",
-    referenceImage: "Whether an image is attached",
-    voiceInput: "Whether voice input is used",
-    estimatedComplexity: "Simple, medium, or complex task",
-    providerCapabilities: "What the selected provider can do",
-    userSelection: "Manual provider override if set",
-  };
-}
-
 export function getCapabilityForStrategy(strategy) {
   return STRATEGY_TO_CAPABILITY[strategy] || "website_generation";
 }

@@ -31,8 +31,7 @@ async function loadProvider(name) {
     providerModules[name] = mod.default;
     PROVIDER_MAP[name] = mod.default;
     return mod.default;
-  } catch (e) {
-    console.error(`[ProviderManager] Failed to load ${name}:`, e);
+  } catch {
     return null;
   }
 }
@@ -84,7 +83,7 @@ function isFatalError(error) {
     msg.includes("403") ||
     msg.includes("invalid request") ||
     msg.includes("bad request") ||
-    msg.includes("400") ||
+    msg.includes(" status 400") ||
     msg.includes("unsupported")
   );
 }
@@ -535,7 +534,6 @@ export async function executeWithFallback({ systemPrompt, context, userPrompt, s
 
         if ((isRateLimitError(error) || isTimeoutError(error)) && attempt < MAX_RETRIES_PER_PROVIDER) {
           const backoff = RETRY_BACKOFF_MS[attempt] || 5000;
-          console.log(`[ProviderManager] ${providerName} ${isRateLimitError(error) ? 'rate limited' : 'timed out'}, retrying in ${backoff}ms (attempt ${attempt + 1}/${MAX_RETRIES_PER_PROVIDER})...`);
           await new Promise((r) => setTimeout(r, backoff));
           continue;
         }
@@ -546,7 +544,6 @@ export async function executeWithFallback({ systemPrompt, context, userPrompt, s
 
     if (i < candidates.length - 1) {
       const nextName = candidates[i + 1];
-      const nextMeta = getProvider(nextName);
       if (_storeRef) {
         try {
           const state = _storeRef.getState();
@@ -555,7 +552,6 @@ export async function executeWithFallback({ systemPrompt, context, userPrompt, s
           }
         } catch { /* noop */ }
       }
-      console.log(`[ProviderManager] Falling back to ${nextMeta?.displayName || nextName}...`);
     }
   }
 
@@ -662,7 +658,6 @@ export async function executeWithResolution(resolution, { systemPrompt, context,
 
         if ((isRateLimitError(error) || isTimeoutError(error)) && attempt < MAX_RETRIES_PER_PROVIDER) {
           const backoff = RETRY_BACKOFF_MS[attempt] || 5000;
-          console.log(`[ProviderManager] ${providerName} ${isRateLimitError(error) ? 'rate limited' : 'timed out'}, retrying in ${backoff}ms...`);
           await new Promise((r) => setTimeout(r, backoff));
           continue;
         }
@@ -673,7 +668,6 @@ export async function executeWithResolution(resolution, { systemPrompt, context,
 
     if (i < orderedCandidates.length - 1) {
       const nextName = orderedCandidates[i + 1].providerName;
-      const nextMeta = getProvider(nextName);
       if (_storeRef) {
         try {
           const state = _storeRef.getState();
@@ -682,7 +676,6 @@ export async function executeWithResolution(resolution, { systemPrompt, context,
           }
         } catch { /* noop */ }
       }
-      console.log(`[ProviderManager] Resolution fallback: ${nextMeta?.displayName || nextName}...`);
     }
   }
 
@@ -718,7 +711,6 @@ export async function executeWithResolution(resolution, { systemPrompt, context,
         }
         if ((isRateLimitError(error) || isTimeoutError(error)) && attempt < MAX_RETRIES_PER_PROVIDER) {
           const backoff = RETRY_BACKOFF_MS[attempt] || 5000;
-          console.log(`[ProviderManager] ${providerName} ${isRateLimitError(error) ? 'rate limited' : 'timed out'}, retrying in ${backoff}ms...`);
           await new Promise((r) => setTimeout(r, backoff));
           continue;
         }

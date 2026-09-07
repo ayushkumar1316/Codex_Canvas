@@ -1,9 +1,45 @@
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 const FETCH_TIMEOUT_MS = 90_000;
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 2000;
 
 function truncatePrompt(prompt, maxChars = 12000) {
   if (prompt.length <= maxChars) return prompt;
   return prompt.slice(0, maxChars) + "\n\n[Truncated for Groq payload limit]";
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableError(error) {
+  const msg = error?.message || "";
+  return msg.includes("429") || msg.includes("503") || msg.includes("timeout") || msg.includes("ECONNRESET");
+}
+
+async function fetchWithRetry(url, options, retries = MAX_RETRIES) {
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok || attempt === retries) return response;
+      if (response.status === 429 || response.status === 503) {
+        if (attempt < retries) {
+          await delay(RETRY_DELAY_MS * (attempt + 1));
+          continue;
+        }
+      }
+      return response;
+    } catch (error) {
+      lastError = error;
+      if (attempt < retries && isRetryableError(error)) {
+        await delay(RETRY_DELAY_MS * (attempt + 1));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw lastError;
 }
 
 export const groqProvider = {
@@ -40,7 +76,7 @@ export const groqProvider = {
       body.response_format = { type: "json_object" };
     }
 
-    const response = await fetch(GROQ_API_URL, {
+    const response = await fetchWithRetry(GROQ_API_URL, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`,
@@ -67,24 +103,14 @@ export const groqProvider = {
     cleaned = cleaned.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "");
     cleaned = cleaned.trim();
 
-    console.log("[Groq] Raw response length:", responseBody.length);
-    console.log("[Groq] Cleaned response (first 500):", cleaned.substring(0, 500));
-
     let parsed;
     try {
       parsed = JSON.parse(cleaned);
     } catch (parseErr) {
-      console.error("[Groq] JSON parse error:", parseErr.message);
-      console.error("[Groq] Raw string that failed:", cleaned.substring(0, 300));
       throw new Error(`Failed to parse AI response as JSON: ${parseErr.message}`, { cause: parseErr });
     }
 
-    const opCount = parsed?.operations?.length ?? (Array.isArray(parsed) ? parsed.length : 0);
-    console.log("[Groq] Parsed operations count:", opCount, "version:", parsed?.version, "type:", parsed?.type);
-    if (opCount > 0) {
-      console.log("[Groq] First operation:", JSON.stringify(parsed.operations?.[0] ?? parsed[0], null, 2));
-    }
-
+    const opCount = parsed?.operations?.length ?? (Array.isArray(parsed) ? parsed.length : 0); // eslint-disable-line no-unused-vars
     return parsed;
   },
 
@@ -168,7 +194,6 @@ export const groqProvider = {
             const data = line.slice(6);
 
             if (data === "[DONE]") {
-              console.log("[Groq Stream] Stream complete");
               continue;
             }
 
@@ -182,8 +207,8 @@ export const groqProvider = {
                   onOperation({ chunk: content, type: "delta" });
                 }
               }
-            } catch (e) {
-              console.error("[Groq Stream] Failed to parse SSE event:", e);
+            } catch {
+              // silently ignore parse errors
             }
           }
         }

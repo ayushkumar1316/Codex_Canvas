@@ -415,15 +415,8 @@ function mapOperationTypes(response) {
   if (response && Array.isArray(response.operations)) {
     convertReplaceWithInlineChildren(response);
 
-    console.log("[Repair] mapOperationTypes - total operations:", response.operations.length);
-    const unsupported = response.operations.filter(op => !SUPPORTED_OPERATION_TYPES.has(op?.type));
-    if (unsupported.length > 0) {
-      console.log("[Repair] Unsupported operation types found:", unsupported.map(op => op?.type));
-    }
-
     const hasReplaceTree = response.operations.some(op => op?.type === "replace_tree");
     if (hasReplaceTree) {
-      console.log("[Repair] replace_tree detected - filtering out redundant create_component operations");
       response.operations = response.operations.filter(op => op?.type !== "create_component" && op?.type !== "addComponent");
     }
 
@@ -458,14 +451,11 @@ function mapOperationTypes(response) {
 
       return op;
     });
-
-    console.log("[Repair] After mapOperationTypes - types:", response.operations.map(op => op?.type));
   }
   return response;
 }
 
 function convertReplaceTreeToReplaceNode(op) {
-  console.log("[Repair] convertReplaceTreeToReplaceNode - raw op:", JSON.stringify(op, null, 2));
   const tree = isObject(op.tree) ? op.tree
     : isObject(op.node) ? op.node
     : isObject(op.component) ? op.component
@@ -473,7 +463,6 @@ function convertReplaceTreeToReplaceNode(op) {
     : null;
 
   if (!tree) {
-    console.log("[Repair] convertReplaceTreeToReplaceNode - no tree found, returning passthrough");
     return op;
   }
 
@@ -486,7 +475,6 @@ function convertReplaceTreeToReplaceNode(op) {
     targetId: "root",
     node: normalized,
   };
-  console.log("[Repair] convertReplaceTreeToReplaceNode - converted:", JSON.stringify(converted, null, 2).substring(0, 500));
   return converted;
 }
 
@@ -499,7 +487,6 @@ function looksLikeComponentNode(op) {
 }
 
 function convertCreateComponentToInsert(op) {
-  console.log("[Repair] convertCreateComponentToInsert - raw op:", JSON.stringify(op, null, 2));
   const component = isObject(op.component) ? op.component : {};
   const node = isObject(op.node) ? op.node : {};
 
@@ -549,7 +536,6 @@ function convertCreateComponentToInsert(op) {
       children: nodeChildren.map(child => isComponentNode(child) ? normalizeRawNode(child) : child),
     },
   };
-  console.log("[Repair] convertCreateComponentToInsert - converted:", JSON.stringify(converted, null, 2));
   return converted;
 }
 
@@ -906,9 +892,13 @@ export function moveStylePropsFromPropsToStyles(response) {
         op.styles = styleProps;
         delete op.props;
       } else {
-        op.props = remainingProps;
-        op.styles = { ...(op.styles || {}), ...styleProps };
+        // Split into two operations: one for styles, one for remaining props
+        const propsOp = { ...op, props: remainingProps };
+        delete propsOp.styles;
         op.type = "updateStyles";
+        op.styles = { ...(op.styles || {}), ...styleProps };
+        delete op.props;
+        response.operations.push(propsOp);
       }
     }
   }

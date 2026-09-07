@@ -11,8 +11,7 @@ import { componentRegistry } from "@/registry/componentRegistry";
 export function ChatInterface() {
   const [isOpen, setIsOpen] = useState(false);
   const [newMessage, setNewMessage] = useState("");
-  const messages = useChatContext().messages || [];
-  const { addUserMessage, updateTargetedNode } = useChatContext();
+  const { messages, addUserMessage, updateTargetedNode } = useChatContext();
   const aiPhase = useAppStore((state) => state.aiPhase);
   const aiLoading = useAppStore((state) => state.aiLoading);
   const streamingProgress = useAppStore((state) => state.streamingProgress);
