@@ -72,7 +72,7 @@ export default function AIPill() {
   const isIdle = aiPhase === "idle";
   const isSuccess = aiPhase === "success";
   const isError = aiPhase === "error";
-  const isProcessing = aiPhase === "understanding" || aiPhase === "planning" || aiPhase === "applying";
+  const isProcessing = aiPhase === "processing";
   const isListening = voiceState === "listening";
 
   const canSend = (hasPrompt || hasImage) && !aiLoading;

@@ -639,24 +639,8 @@ export const useAppStore = create(
         set((state) => {
           state.aiLoading = true;
           state.aiError = null;
-          state.aiPhase = "understanding";
+          state.aiPhase = "processing";
         });
-
-        setTimeout(() => {
-          set((state) => {
-            if (state.aiPhase === "understanding") {
-              state.aiPhase = "planning";
-            }
-          });
-        }, 800);
-
-        setTimeout(() => {
-          set((state) => {
-            if (state.aiPhase === "planning") {
-              state.aiPhase = "applying";
-            }
-          });
-        }, 2000);
 
         try {
           const fullCommand = {
@@ -743,6 +727,14 @@ export const useAppStore = create(
               state.aiPhase = "error";
               state.streamingProgress = null;
             });
+
+            setTimeout(() => {
+              set((state) => {
+                if (state.aiPhase === "error") {
+                  state.aiPhase = "idle";
+                }
+              });
+            }, 3000);
           }
         } catch (error) {
           set((state) => {
@@ -754,6 +746,14 @@ export const useAppStore = create(
             state.aiPhase = "error";
             state.streamingProgress = null;
           });
+
+          setTimeout(() => {
+            set((state) => {
+              if (state.aiPhase === "error") {
+                state.aiPhase = "idle";
+              }
+            });
+          }, 3000);
         }
       },
     })),

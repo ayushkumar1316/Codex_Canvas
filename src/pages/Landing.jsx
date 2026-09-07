@@ -561,11 +561,11 @@ export default function Landing() {
                         <MoreVertical className="size-4" />
                       </button>
                       {contextMenuCanvasId === canvas.id && (
-                        <div className="absolute right-0 top-full z-10 mt-1 w-40 rounded-xl border border-white/[0.08] bg-[#12121a] p-1 shadow-xl">
+                        <div className="absolute right-0 top-full z-10 mt-1 w-40 rounded-xl border border-border-subtle bg-surface-1 p-1 shadow-xl">
                           <button
                             type="button"
                             onClick={() => handleStartRename(canvas)}
-                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 transition-colors hover:bg-white/[0.06]"
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-text-secondary transition-colors hover:bg-hover-surface"
                           >
                             <SquarePen className="size-3.5" />
                             Rename
@@ -576,21 +576,21 @@ export default function Landing() {
                               handleDuplicateCanvas(canvas.id);
                               setContextMenuCanvasId(null);
                             }}
-                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-zinc-300 transition-colors hover:bg-white/[0.06]"
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-text-secondary transition-colors hover:bg-hover-surface"
                           >
                             <Copy className="size-3.5" />
                             Duplicate
                           </button>
                           {canvases.length > 1 && (
                             <>
-                              <div className="my-1 h-px bg-white/[0.05]" />
+                              <div className="my-1 h-px bg-border-subtle" />
                               <button
                                 type="button"
                                 onClick={() => {
                                   setCanvasToDelete(canvas);
                                   setContextMenuCanvasId(null);
                                 }}
-                                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-red-400 transition-colors hover:bg-red-500/10"
+                                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
                                 aria-label="Delete canvas"
                               >
                                 <Trash2 className="size-3.5" />

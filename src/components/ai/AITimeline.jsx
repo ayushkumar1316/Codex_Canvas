@@ -6,9 +6,7 @@ import { getProviderTheme } from "@/ai/providerRegistry";
 import { getModel } from "@/ai/models";
 
 const phases = [
-  { key: "understanding", label: "Understanding Prompt" },
-  { key: "planning", label: "Planning Changes" },
-  { key: "applying", label: "Generating Components" },
+  { key: "processing", label: "Processing Request" },
 ];
 
 const ICONS = {
@@ -61,7 +59,7 @@ export default function AITimeline() {
   }, []);
 
   useEffect(() => {
-    if (aiPhase === "understanding" || aiPhase === "planning" || aiPhase === "applying") {
+    if (aiPhase === "processing") {
       dispatch({ type: "PROCESSING" });
     } else if (aiPhase === "success") {
       dispatch({ type: "EXIT_START" });

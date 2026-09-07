@@ -19,7 +19,7 @@ export default function Layout() {
       <Header />
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {editorMode === "editor" && (
-          <div className="shrink-0">
+          <div className="hidden shrink-0 md:block">
             <LeftSidebar />
           </div>
         )}
@@ -27,7 +27,7 @@ export default function Layout() {
         <Canvas />
 
         {editorMode === "editor" && (
-          <div className="shrink-0">
+          <div className="hidden shrink-0 lg:block">
             <RightPanel />
           </div>
         )}

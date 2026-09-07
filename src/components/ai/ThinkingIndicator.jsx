@@ -25,8 +25,8 @@ export default function ThinkingIndicator({ className }) {
           key={i}
           className={`inline-block size-[5px] rounded-full transition-all duration-300 ${
             active
-              ? "scale-100 bg-violet-400 opacity-100"
-              : "scale-75 bg-text-muted opacity-40"
+              ? "scale-100 bg-primary opacity-100"
+              : "scale-75 bg-border-default opacity-40"
           }`}
         />
       ))}

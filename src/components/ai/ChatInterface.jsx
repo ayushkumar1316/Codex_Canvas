@@ -104,7 +104,7 @@ export function ChatInterface() {
           ))
         )}
 
-        {(aiPhase === "understanding" || aiPhase === "planning" || aiPhase === "applying") && (
+        {(aiPhase === "processing") && (
           <div className="flex gap-1">
             <div className="size-2 animate-bounce rounded-full bg-primary [animation-delay:0ms]" />
             <div className="size-2 animate-bounce rounded-full bg-primary [animation-delay:150ms]" />

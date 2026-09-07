@@ -48,7 +48,7 @@ export default function AIStatus({ phase = "idle", error = null }) {
   if (!config) return null;
 
   const Icon = config.icon;
-  const isThinking = phase === "understanding" || phase === "planning" || phase === "applying";
+  const isThinking = phase === "processing";
 
   const activeId = aiActiveProvider || (aiProvider === "auto" ? "gemini" : aiProvider);
   const activeTheme = getProviderTheme(activeId);

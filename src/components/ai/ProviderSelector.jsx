@@ -95,7 +95,7 @@ export default function ProviderSelector({ variant = "landing" }) {
   const activeTheme = getProviderTheme(activeProviderId);
   const ActiveIcon = ICONS[activeProviderId] || Sparkles;
 
-  const isGenerating = aiPhase === "understanding" || aiPhase === "planning" || aiPhase === "applying";
+  const isGenerating = aiPhase === "processing";
 
   const fallbackInfo = (() => {
     if (aiError && aiProvider === "auto") {
@@ -422,26 +422,26 @@ export default function ProviderSelector({ variant = "landing" }) {
                       )}
 
                       {isExpanded && (
-                        <div className="space-y-1 rounded-lg border border-white/[0.05] bg-white/[0.02] p-2.5">
+                        <div className="space-y-1 rounded-lg border border-border-subtle bg-surface-2 p-2.5">
                           <div className="grid grid-cols-2 gap-1.5 text-xs">
-                            <div className="text-zinc-400">Provider</div>
-                            <div className="text-zinc-300">{theme.name}</div>
-                            <div className="text-zinc-400">Model</div>
-                            <div className="text-zinc-300">{getProviderModel(providerId)}</div>
-                            <div className="text-zinc-400">Status</div>
+                            <div className="text-text-muted">Provider</div>
+                            <div className="text-text-secondary">{theme.name}</div>
+                            <div className="text-text-muted">Model</div>
+                            <div className="text-text-secondary">{getProviderModel(providerId)}</div>
+                            <div className="text-text-muted">Status</div>
                             <div className={statusConfig.textColor}>{statusConfig.label}</div>
-                            <div className="text-zinc-400">API Key</div>
+                            <div className="text-text-muted">API Key</div>
                             <div className={hasApiKey(providerId) ? "text-emerald-400" : "text-red-400"}>
                               {hasApiKey(providerId) ? "Configured" : "Missing"}
                             </div>
-                            <div className="text-zinc-400">Last Checked</div>
-                            <div className="text-zinc-300">{formatTime(providerHealth?.lastChecked)}</div>
+                            <div className="text-text-muted">Last Checked</div>
+                            <div className="text-text-secondary">{formatTime(providerHealth?.lastChecked)}</div>
                             {providerHealth && (
                               <>
-                                <div className="text-zinc-400">Response Time</div>
-                                <div className="text-zinc-300">{Math.round(providerHealth.avgResponseTime || 0)}ms</div>
-                                <div className="text-zinc-400">Requests</div>
-                                <div className="text-zinc-300">{providerHealth.totalRequests || 0}</div>
+                                <div className="text-text-muted">Response Time</div>
+                                <div className="text-text-secondary">{Math.round(providerHealth.avgResponseTime || 0)}ms</div>
+                                <div className="text-text-muted">Requests</div>
+                                <div className="text-text-secondary">{providerHealth.totalRequests || 0}</div>
                               </>
                             )}
                           </div>

@@ -442,11 +442,17 @@ export function getFriendlyErrorMessage(error, providerName) {
   }
 
   if (type === "provider_error") {
-    return msg;
+    if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
+      return "Network error. Please check your internet connection.";
+    }
+    return "Something went wrong with the AI provider. Please try again.";
   }
 
   if (type === "request") {
-    return msg;
+    if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
+      return "Network error. Please check your internet connection.";
+    }
+    return "Request failed. Please try again.";
   }
 
   return "Something went wrong. Please try again.";

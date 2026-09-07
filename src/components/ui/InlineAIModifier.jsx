@@ -29,28 +29,46 @@ export function InlineAIModifier() {
       return;
     }
 
-    // Find the DOM element for the selected component
-    const element = document.querySelector(
-      `[data-component-id="${selectedComponentId}"]`
-    );
+    const updatePosition = () => {
+      const element = document.querySelector(
+        `[data-component-id="${selectedComponentId}"]`
+      );
 
-    if (element) {
-      const rect = element.getBoundingClientRect();
-      setPosition({
-        top: rect.top - 60, // Above the element
-        left: rect.left + rect.width / 2, // Centered
-      });
-      setIsVisible(true);
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        setPosition({
+          top: rect.top - 60,
+          left: rect.left + rect.width / 2,
+        });
+        setIsVisible(true);
+      } else {
+        setIsVisible(false);
+      }
+    };
 
-      // Focus input when visible
-      setTimeout(() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
-      }, 100);
-    } else {
-      setIsVisible(false);
+    updatePosition();
+
+    // Track scroll to keep position updated
+    const scrollTarget = document.querySelector("[data-canvas-scroll]");
+    if (scrollTarget) {
+      scrollTarget.addEventListener("scroll", updatePosition, { passive: true });
     }
+    window.addEventListener("scroll", updatePosition, { passive: true });
+    window.addEventListener("resize", updatePosition, { passive: true });
+
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, 100);
+
+    return () => {
+      if (scrollTarget) {
+        scrollTarget.removeEventListener("scroll", updatePosition);
+      }
+      window.removeEventListener("scroll", updatePosition);
+      window.removeEventListener("resize", updatePosition);
+    };
   }, [selectedComponentId]);
 
   // Hide when clicking outside
@@ -119,7 +137,7 @@ export function InlineAIModifier() {
 
   if (!isVisible || !selectedComponentId) return null;
 
-  const isProcessing = aiPhase === "understanding" || aiPhase === "planning";
+  const isProcessing = aiPhase === "processing";
 
   return (
     <div

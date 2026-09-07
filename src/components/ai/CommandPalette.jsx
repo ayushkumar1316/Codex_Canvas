@@ -265,9 +265,9 @@ export default function CommandPalette({ isOpen, onClose }) {
       onClick={handleBackdropClick}
     >
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-      <div className="relative w-full max-w-lg rounded-2xl border border-white/[0.08] bg-[#12121a] shadow-2xl">
-        <div className="flex items-center gap-3 border-b border-white/[0.05] px-4 py-3">
-          <Search className="size-4 text-zinc-400" />
+      <div className="relative w-full max-w-lg rounded-2xl border border-border-subtle bg-surface-1 shadow-2xl">
+        <div className="flex items-center gap-3 border-b border-border-subtle px-4 py-3">
+          <Search className="size-4 text-text-muted" />
           <input
             ref={inputRef}
             type="text"
@@ -277,13 +277,13 @@ export default function CommandPalette({ isOpen, onClose }) {
               setSelectedIndex(0);
             }}
             placeholder="Search commands..."
-            className="flex-1 bg-transparent text-sm text-zinc-100 outline-none placeholder:text-zinc-400"
+            className="flex-1 bg-transparent text-sm text-text-primary outline-none placeholder:text-text-muted"
             aria-label="Search commands"
           />
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-300"
+            className="rounded-md p-1 text-text-muted hover:bg-surface-2 hover:text-text-secondary"
             aria-label="Close command palette"
           >
             <X className="size-4" />
@@ -296,7 +296,7 @@ export default function CommandPalette({ isOpen, onClose }) {
           role="listbox"
         >
           {filteredCommands.length === 0 ? (
-            <div className="py-8 text-center text-sm text-zinc-400">
+            <div className="py-8 text-center text-sm text-text-muted">
               No commands found
             </div>
           ) : (
@@ -314,16 +314,16 @@ export default function CommandPalette({ isOpen, onClose }) {
                   disabled={command.disabled}
                   className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                     index === selectedIndex
-                      ? "bg-white/[0.08] text-zinc-100"
-                      : "text-zinc-300 hover:bg-white/[0.04]"
+                      ? "bg-surface-2 text-text-primary"
+                      : "text-text-secondary hover:bg-surface-2/50"
                   } ${command.disabled ? "cursor-not-allowed opacity-40" : ""}`}
                   role="option"
                   aria-selected={index === selectedIndex}
                 >
-                  <Icon className="size-4 shrink-0 text-zinc-400" />
+                  <Icon className="size-4 shrink-0 text-text-muted" />
                   <span className="flex-1 text-left">{command.label}</span>
                   {command.shortcut && (
-                    <span className="text-xs text-zinc-400">
+                    <span className="text-xs text-text-muted">
                       {command.shortcut}
                     </span>
                   )}
@@ -333,13 +333,13 @@ export default function CommandPalette({ isOpen, onClose }) {
           )}
         </div>
 
-        <div className="flex items-center justify-between border-t border-white/[0.05] px-4 py-2.5">
-          <div className="flex items-center gap-2 text-xs text-zinc-400">
-            <span className="rounded bg-white/[0.06] px-1.5 py-0.5">↑↓</span>
+        <div className="flex items-center justify-between border-t border-border-subtle px-4 py-2.5">
+          <div className="flex items-center gap-2 text-xs text-text-muted">
+            <span className="rounded bg-surface-2 px-1.5 py-0.5">↑↓</span>
             <span>Navigate</span>
-            <span className="rounded bg-white/[0.06] px-1.5 py-0.5">↵</span>
+            <span className="rounded bg-surface-2 px-1.5 py-0.5">↵</span>
             <span>Select</span>
-            <span className="rounded bg-white/[0.06] px-1.5 py-0.5">Esc</span>
+            <span className="rounded bg-surface-2 px-1.5 py-0.5">Esc</span>
             <span>Close</span>
           </div>
         </div>

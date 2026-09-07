@@ -138,7 +138,8 @@ export default function Header() {
         useAppStore.getState().setActiveCanvas(result.data.canvas.id);
         setShowContextMenu(false);
       } else {
-        alert(`Import failed: ${result.error}`);
+        console.warn("Import failed:", result.error);
+        setShowContextMenu(false);
       }
     };
     input.click();
@@ -307,7 +308,7 @@ export default function Header() {
                       <button
                         type="button"
                         onClick={handleDelete}
-                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-red-500 transition-colors hover:bg-red-50"
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
                         aria-label="Delete canvas"
                       >
                         <Trash2 className="size-3.5" />

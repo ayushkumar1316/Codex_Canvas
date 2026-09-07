@@ -25,8 +25,8 @@ function renderNode(node, selectedComponentId, newIds, reduced, depth) {
       "data-component-id": node.id,
       "data-component-type": node.type,
       "tabIndex": node.type !== "root" ? 0 : undefined,
-      "role": node.type !== "root" ? "button" : undefined,
-      "aria-label": node.type !== "root" ? `${node.type} component` : undefined,
+      "role": node.type !== "root" ? undefined : undefined,
+      "aria-label": node.type !== "root" ? `${node.type}: ${node.props?.text || node.props?.alt || node.props?.placeholder || ""}` : undefined,
       className: [
         node.props?.className,
         "relative transition-all duration-150 ease-out",

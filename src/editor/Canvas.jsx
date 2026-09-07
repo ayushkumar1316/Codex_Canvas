@@ -31,7 +31,7 @@ export default function Canvas() {
   const prevPhaseRef = useRef(aiPhase);
 
   useEffect(() => {
-    if (prevPhaseRef.current === "applying" && aiPhase === "success" && !reduced) {
+    if (prevPhaseRef.current === "processing" && aiPhase === "success" && !reduced) {
       setShowRipple(true);
       const timer = setTimeout(() => setShowRipple(false), 500);
       return () => clearTimeout(timer);
@@ -40,14 +40,14 @@ export default function Canvas() {
   }, [aiPhase, reduced]);
 
   useEffect(() => {
-    if (aiPhase === "applying" && !reduced) {
+    if (aiPhase === "processing" && !reduced) {
       setShowSweep(true); // eslint-disable-line react-hooks/set-state-in-effect
       const timer = setTimeout(() => setShowSweep(false), 1200);
       return () => clearTimeout(timer);
     }
   }, [aiPhase, reduced]);
 
-  const isProcessing = aiPhase === "understanding" || aiPhase === "planning" || aiPhase === "applying";
+  const isProcessing = aiPhase === "processing";
 
   const deviceWidth = getDeviceWidth(previewDevice);
   const hasDeviceFrame = deviceWidth !== null;
