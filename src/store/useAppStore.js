@@ -663,6 +663,19 @@ export const useAppStore = create(
           const result = await executeAICommand(fullCommand);
 
           if (result.success && result.componentTree) {
+            // Log assistant response to chat history
+            const { useChatStore } = await import("./useChatStore");
+            const chatState = useChatStore.getState();
+            chatState.addMessage({
+              role: "assistant",
+              content: `Applied ${result.validation?.errors || 0} patches successfully`,
+              metadata: {
+                operationsCount: result.validation?.errors ?? 0,
+                strategy: result.strategy?.type,
+                provider: result.provider,
+              },
+            });
+
             set((state) => {
               state.aiPhase = "success";
               state.aiLoading = false;

@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
+import { useChatContext } from "@/hooks/useChatContext";
 import { componentRegistry } from "@/registry/componentRegistry";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import useSpeechRecognition from "@/hooks/useSpeechRecognition";
@@ -38,6 +39,10 @@ export default function AIPill() {
   const setAIPrompt = useAppStore((state) => state.setAIPrompt);
   const aiPhase = useAppStore((state) => state.aiPhase);
   const aiProvider = useAppStore((state) => state.aiProvider);
+
+  // Chat context for conversation memory
+  const { addUserMessage, addAssistantMessage, updateTargetedNode } =
+    useChatContext();
 
   const [sendFlash, setSendFlash] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -90,6 +95,19 @@ export default function AIPill() {
 
     const usedVoice = usedVoiceSinceLastClear.current;
     usedVoiceSinceLastClear.current = false;
+
+    // Add user message to chat history
+    addUserMessage(prompt, {
+      selectedComponentId,
+      scope: selectedComponentId ? "component" : "page",
+      hasVoice: usedVoice,
+      hasImage: !!image,
+    });
+
+    // Track targeted node for pronoun resolution
+    if (selectedComponentId) {
+      updateTargetedNode(selectedComponentId, "component");
+    }
 
     submitAICommand({
       prompt,
@@ -318,6 +336,17 @@ export default function AIPill() {
             </div>
           ) : (
             <AIStatus phase={aiPhase} error={aiError} />
+          )}
+
+          {!isListening && !voiceError && !imageError && !isError && (
+            <div className="flex items-center gap-1.5 text-xs text-text-muted">
+              {selectedComponentId ? (
+                <span className="inline-flex items-center gap-1">
+                  <span className="inline-block size-1.5 rounded-full bg-primary/60" />
+                  Editing component
+                </span>
+              ) : null}
+            </div>
           )}
 
           {(isError || voiceError || imageError) && (
