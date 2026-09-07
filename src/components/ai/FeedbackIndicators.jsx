@@ -7,7 +7,6 @@ import { Zap, AlertCircle, CheckCircle2 } from "lucide-react";
  */
 export function TokenUsageIndicator() {
   const streamingProgress = useAppStore((state) => state.streamingProgress);
-  const aiPhase = useAppStore((state) => state.aiPhase);
 
   if (!streamingProgress) return null;
 

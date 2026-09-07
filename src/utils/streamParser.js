@@ -63,7 +63,7 @@ export class StreamJSONParser {
               i = 0;
               objectStart = -1;
               continue;
-            } catch (e) {
+            } catch {
               // Incomplete JSON, wait for more data
               break;
             }
@@ -125,7 +125,7 @@ export function validateStreamOperation(operation) {
     return { valid: false, reason: "Invalid operation object" };
   }
 
-  const { type, targetId, parentId, node, props, styles } = operation;
+  const { type, targetId, parentId, node } = operation;
 
   if (!type) {
     return { valid: false, reason: "Missing operation type" };

@@ -222,7 +222,7 @@ export const useAppStore = create(
       streamingProgress: null,
 
       providerHealth: {},
-      providerPriority: ["gemini", "groq", "openrouter", "openai"],
+      providerPriority: ["gemini", "groq", "openrouter"],
 
       canUndo: false,
       canRedo: false,

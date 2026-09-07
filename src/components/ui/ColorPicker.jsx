@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { cn } from "@/lib/utils";
 
 const PRESET_COLORS = [
   "#000000", "#ffffff", "#f8fafc", "#f1f5f9", "#e2e8f0", "#cbd5e1",
@@ -23,7 +22,7 @@ export default function ColorPicker({ value = "", onChange, label }) {
   const nativeRef = useRef(null);
 
   useEffect(() => {
-    setInputValue(value);
+    setInputValue(value); // eslint-disable-line react-hooks/set-state-in-effect
   }, [value]);
 
   useEffect(() => {

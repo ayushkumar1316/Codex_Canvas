@@ -3,14 +3,5 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "vite",
-  "regions": ["iad1"],
-  "env": {
-    "VITE_AI_PROVIDER": "@VITE_AI_PROVIDER",
-    "VITE_GEMINI_API_KEY": "@VITE_GEMINI_API_KEY",
-    "VITE_GROQ_API_KEY": "@VITE_GROQ_API_KEY",
-    "VITE_OPENROUTER_API_KEY": "@VITE_OPENROUTER_API_KEY"
-  },
-  "git": {
-    "silent": false
-  }
+  "regions": ["iad1"]
 }

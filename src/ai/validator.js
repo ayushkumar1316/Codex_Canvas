@@ -1033,7 +1033,6 @@ function looksLikeFlatOperation(obj) {
   if (!obj || typeof obj !== "object" || Array.isArray(obj)) return false;
   const hasOp = typeof obj.operation === "string" || typeof obj.type === "string";
   const hasContent = isObject(obj.styles) || isObject(obj.props) || obj.node || obj.component;
-  const hasId = typeof obj.nodeId === "string" || typeof obj.targetId === "string" || typeof obj.id === "string" || typeof obj.target === "string";
   const noOpsArray = !Array.isArray(obj.operations);
   return hasOp && hasContent && noOpsArray;
 }

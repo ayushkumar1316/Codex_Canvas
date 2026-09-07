@@ -33,10 +33,10 @@ export const useChatStore = create(
 
       // Update the last targeted node (for pronoun resolution like "make it bigger")
       setLastTargetedNode: (nodeId, nodeType) => {
-        set((state) => ({
+        set({
           lastTargetedNodeId: nodeId,
           lastTargetedNodeType: nodeType,
-        }));
+        });
       },
 
       // Get last N messages for context
@@ -62,23 +62,23 @@ export const useChatStore = create(
       // Initialize a new conversation session
       startNewSession: () => {
         const sessionId = `session-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-        set((state) => ({
+        set({
           currentSessionId: sessionId,
           conversationStartTime: new Date().toISOString(),
           messages: [],
           lastTargetedNodeId: null,
           lastTargetedNodeType: null,
-        }));
+        });
         return sessionId;
       },
 
       // Clear conversation history
       clearHistory: () => {
-        set((state) => ({
+        set({
           messages: [],
           lastTargetedNodeId: null,
           lastTargetedNodeType: null,
-        }));
+        });
       },
 
       // Export conversation for debugging/logging

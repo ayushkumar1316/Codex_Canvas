@@ -10,7 +10,6 @@ import { componentRegistry } from "@/registry/componentRegistry";
  */
 export function InlineAIModifier() {
   const selectedComponentId = useAppStore((state) => state.selectedComponentId);
-  const componentTree = useAppStore((state) => state.componentTree);
   const submitAICommand = useAppStore((state) => state.submitAICommand);
   const aiLoading = useAppStore((state) => state.aiLoading);
   const aiPhase = useAppStore((state) => state.aiPhase);
@@ -26,7 +25,7 @@ export function InlineAIModifier() {
   // Calculate position based on selected component
   useEffect(() => {
     if (!selectedComponentId) {
-      setIsVisible(false);
+      setIsVisible(false); // eslint-disable-line react-hooks/set-state-in-effect
       return;
     }
 

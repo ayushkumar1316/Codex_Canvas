@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { X, Sparkles, MousePointer, MessageSquare, Wand2 } from "lucide-react";
-import { useAppStore } from "@/store/useAppStore";
 
 const STEPS = [
   {
@@ -46,7 +45,7 @@ export function InteractiveTutorial() {
     // Check if user has seen tutorial
     const completed = localStorage.getItem("codex-canvas-tutorial-complete");
     if (!completed) {
-      setIsVisible(true);
+      setIsVisible(true); // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, []);
 

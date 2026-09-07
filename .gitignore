@@ -33,3 +33,19 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Test artifacts
+test-results/
+test-screenshots/
+test-output.txt
+.playwright-mcp/
+
+# Debug scripts
+check-keys.cjs
+debug-providers.cjs
+browser-test.cjs
+
+# Temp screenshots
+after-saas.png
+modern-saas.png
+test-ui*.png

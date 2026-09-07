@@ -270,7 +270,6 @@ function convertJsonPatchToOurFormat(patchOps, tree) {
           }
         } else if (!propSeg && op.value && isObject(op.value) && targetId) {
           if (childSegs.length > 0 && segments[segments.length - 1]?.type !== "child") {
-            const lastChildSeg = childSegs[childSegs.length - 1];
             if (targetNode) {
               operations.push({
                 type: "replaceNode",

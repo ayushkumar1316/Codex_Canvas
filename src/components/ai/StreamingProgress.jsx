@@ -7,14 +7,14 @@ import { useAppStore } from "@/store/useAppStore";
  */
 export function StreamingProgress() {
   const streamingProgress = useAppStore((state) => state.streamingProgress);
-  const aiPhase = useAppStore((state) => state.aiPhase);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     if (streamingProgress?.status === "streaming") {
-      setIsVisible(true);
+      setIsVisible(true); // eslint-disable-line react-hooks/set-state-in-effect
     } else if (streamingProgress?.status === "complete") {
-      setTimeout(() => setIsVisible(false), 1500);
+      const t = setTimeout(() => setIsVisible(false), 1500);
+      return () => clearTimeout(t);
     }
   }, [streamingProgress]);
 

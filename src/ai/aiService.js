@@ -21,16 +21,6 @@ import { responseCache } from "./responseCache";
 const DEFAULT_REGISTRY = Object.keys(componentRegistry);
 const IS_DEV = import.meta.env.DEV;
 
-function hashString(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0;
-  }
-  return hash.toString(36);
-}
-
 function devLog(stage, data) {
   if (IS_DEV) {
     console.log(`[Pipeline] ${stage}`, data);
@@ -204,13 +194,6 @@ export async function executeAICommand(command) {
     devTime("Provider Selection + API Call");
     let fallbackResult;
     const resolved = capabilityResult.resolution?.resolution;
-
-    const cacheKey = {
-      prompt: effectivePrompt,
-      treeHash: hashString(JSON.stringify(command.componentTree)),
-      strategy: strategy.strategy,
-      intent: intentRoute.intent,
-    };
 
     const cachedResponse = responseCache.get(
       effectivePrompt,

@@ -84,6 +84,7 @@ export default function DevicePreview({ value = "desktop", onChange }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function getDeviceWidth(deviceId) {
   const device = DEVICES.find((d) => d.id === deviceId);
   return device?.width ?? null;

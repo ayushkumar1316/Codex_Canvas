@@ -20,28 +20,20 @@ import AIStatus from "./AIStatus";
 import ImageAttachment from "./ImageAttachment";
 import ProviderSelector from "./ProviderSelector";
 
-function computeCanvasState(componentTree) {
-  if (!componentTree) return "EMPTY";
-  const hasChildren = (componentTree.children?.length ?? 0) > 0;
-  return hasChildren ? "COMPLETE" : "PARTIAL";
-}
-
 export default function AIPill() {
-  const editorMode = useAppStore((state) => state.editorMode);
   const selectedComponentId = useAppStore(
     (state) => state.selectedComponentId
   );
-  const componentTree = useAppStore((state) => state.componentTree);
   const submitAICommand = useAppStore((state) => state.submitAICommand);
   const aiLoading = useAppStore((state) => state.aiLoading);
   const aiError = useAppStore((state) => state.aiError);
   const prompt = useAppStore((state) => state.aiPrompt);
   const setAIPrompt = useAppStore((state) => state.setAIPrompt);
   const aiPhase = useAppStore((state) => state.aiPhase);
-  const aiProvider = useAppStore((state) => state.aiProvider);
+  const editorMode = useAppStore((state) => state.editorMode);
 
   // Chat context for conversation memory
-  const { addUserMessage, addAssistantMessage, updateTargetedNode } =
+  const { addUserMessage, updateTargetedNode } =
     useChatContext();
 
   const [sendFlash, setSendFlash] = useState(false);

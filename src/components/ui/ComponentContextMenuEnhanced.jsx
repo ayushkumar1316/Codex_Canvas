@@ -3,10 +3,8 @@ import {
   Sparkles,
   Copy,
   Trash2,
-  MoreVertical,
   Palette,
   Type,
-  Move,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 

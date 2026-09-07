@@ -13,12 +13,12 @@ export default function NumberInput({
   unit = "",
   className,
 }) {
-  const numericPart = parseFloat(String(value).replace(/[^0-9.\-]/g, "")) || 0;
+  const numericPart = parseFloat(String(value).replace(/[^0-9.-]/g, "")) || 0;
   const [localValue, setLocalValue] = useState(String(numericPart));
   const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
-    setLocalValue(String(numericPart));
+    setLocalValue(String(numericPart)); // eslint-disable-line react-hooks/set-state-in-effect
   }, [numericPart]);
 
   const handleInputChange = useCallback(

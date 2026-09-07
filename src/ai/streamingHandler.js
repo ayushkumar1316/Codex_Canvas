@@ -1,4 +1,4 @@
-import { StreamJSONParser, validateStreamOperation } from "@/utils/streamParser";
+import { validateStreamOperation } from "@/utils/streamParser";
 import { applyJsonPatchWithDiagnostics } from "@/utils/jsonPatch";
 import { completionPass } from "@/utils/completionPass";
 
@@ -67,7 +67,7 @@ export class ProgressiveStreamHandler {
               i = 0;
               objectStart = -1;
               continue;
-            } catch (e) {
+            } catch {
               // Incomplete JSON, wait for more data
               break;
             }

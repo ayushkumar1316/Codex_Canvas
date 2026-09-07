@@ -505,7 +505,6 @@ export async function executeWithFallback({ systemPrompt, context, userPrompt, s
     health[providerName].retryCount = i;
     health[providerName].status = "busy";
 
-    let lastError = null;
     for (let attempt = 0; attempt <= MAX_RETRIES_PER_PROVIDER; attempt++) {
       const start = Date.now();
       try {
@@ -514,7 +513,6 @@ export async function executeWithFallback({ systemPrompt, context, userPrompt, s
         recordSuccess(providerName, elapsed);
         return { success: true, response, provider: providerName, error: null };
       } catch (error) {
-        lastError = error;
         recordFailure(providerName, error);
 
         if (isFatalError(error)) {

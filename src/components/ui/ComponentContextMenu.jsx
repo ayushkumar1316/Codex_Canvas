@@ -23,7 +23,6 @@ export default function ComponentContextMenu({
   const duplicateComponent = useAppStore((state) => state.duplicateComponent);
   const deleteComponent = useAppStore((state) => state.deleteComponent);
   const selectParentComponent = useAppStore((state) => state.selectParentComponent);
-  const setSelectedComponent = useAppStore((state) => state.setSelectedComponent);
   const submitAICommand = useAppStore((state) => state.submitAICommand);
   const componentTree = useAppStore((state) => state.componentTree);
 

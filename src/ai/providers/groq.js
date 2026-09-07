@@ -76,7 +76,7 @@ export const groqProvider = {
     } catch (parseErr) {
       console.error("[Groq] JSON parse error:", parseErr.message);
       console.error("[Groq] Raw string that failed:", cleaned.substring(0, 300));
-      throw new Error(`Failed to parse AI response as JSON: ${parseErr.message}`);
+      throw new Error(`Failed to parse AI response as JSON: ${parseErr.message}`, { cause: parseErr });
     }
 
     const opCount = parsed?.operations?.length ?? (Array.isArray(parsed) ? parsed.length : 0);

@@ -180,7 +180,7 @@ function StyleSection({ title, icon: Icon, defaultOpen = true, children }) {
 
 function parseNumeric(value) {
   if (!value) return 0;
-  return parseFloat(String(value).replace(/[^0-9.\-]/g, "")) || 0;
+  return parseFloat(String(value).replace(/[^0-9.-]/g, "")) || 0;
 }
 
 export default function RightPanel() {

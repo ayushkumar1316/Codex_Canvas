@@ -22,7 +22,6 @@ export default function Canvas() {
   const componentTree = useAppStore((state) => state.componentTree);
   const aiPhase = useAppStore((state) => state.aiPhase);
   const previewDevice = useAppStore((state) => state.previewDevice);
-  const editorMode = useAppStore((state) => state.editorMode);
   const hasChildren = (componentTree?.children?.length ?? 0) > 0;
   const reduced = useReducedMotion();
   const newIds = useNewComponentTracker(componentTree);
@@ -42,7 +41,7 @@ export default function Canvas() {
 
   useEffect(() => {
     if (aiPhase === "applying" && !reduced) {
-      setShowSweep(true);
+      setShowSweep(true); // eslint-disable-line react-hooks/set-state-in-effect
       const timer = setTimeout(() => setShowSweep(false), 1200);
       return () => clearTimeout(timer);
     }

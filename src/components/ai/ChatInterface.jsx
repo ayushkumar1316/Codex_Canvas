@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { X, MessageCircle, Send, Sparkles } from "lucide-react";
 import { useChatContext } from "@/hooks/useChatContext";
 import { useAppStore } from "@/store/useAppStore";

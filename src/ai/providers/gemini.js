@@ -83,7 +83,8 @@ export const geminiProvider = {
           console.error("[Gemini] JSON parse error:", parseErr.message);
           console.error("[Gemini] Raw string that failed:", cleaned.substring(0, 300));
           throw new Error(
-            `Failed to parse Gemini response as JSON. Response starts with: ${cleaned.substring(0, 100)}...`
+            `Failed to parse Gemini response as JSON. Response starts with: ${cleaned.substring(0, 100)}...`,
+            { cause: parseErr }
           );
         }
 

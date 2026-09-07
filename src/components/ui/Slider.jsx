@@ -16,7 +16,7 @@ export default function Slider({
   const trackRef = useRef(null);
 
   useEffect(() => {
-    setLocalValue(value);
+    setLocalValue(value); // eslint-disable-line react-hooks/set-state-in-effect
   }, [value]);
 
   const percent = Math.min(Math.max(((localValue - min) / (max - min)) * 100, 0), 100);
